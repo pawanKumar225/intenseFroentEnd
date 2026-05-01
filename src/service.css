@@ -1,0 +1,63 @@
+/* Flip Card Container */
+.flip-card {
+  perspective: 1000px;
+}
+
+/* Inner */
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+}
+
+/* Flip on hover */
+.flip-card:hover .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+/* Front & Back */
+.flip-card-front,
+.flip-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  backface-visibility: hidden;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+  text-align: center;
+}
+
+/* FRONT DESIGN */
+.flip-card-front {
+  background: linear-gradient(135deg, #e91e63, #ff6f91, #c471ed);
+  color: #fff;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* BACK DESIGN */
+.flip-card-back {
+  background: linear-gradient(135deg, #c471ed, #ff6f91, #e91e63);
+  color: #fff;
+  transform: rotateY(180deg);
+  box-shadow: 0 12px 35px rgba(233, 30, 99, 0.3);
+}
+
+/* Icon */
+.icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+/* Hover polish */
+.flip-card:hover {
+  transform: translateY(-8px);
+  transition: 0.3s;
+}
