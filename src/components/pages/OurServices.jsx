@@ -1,15 +1,61 @@
 import { Container, Typography, Grid, Box } from "@mui/material";
-
+import { useNavigate } from "react-router-dom";
 export default function OurServices() {
+  const navigate = useNavigate();
   const services = [
-    { title: "Makeup", desc: "Professional bridal & party makeup", icon: "💄" },
-    { title: "Hair Styling", desc: "Trendy hairstyles & treatments", icon: "💇‍♀️" },
-    { title: "Nail Art", desc: "Creative nail designs", icon: "💅" },
-    { title: "Cosmetology", desc: "Advanced skincare solutions", icon: "🌿" },
-    { title: "Bridal", desc: "Complete bridal packages", icon: "👰" },
-    { title: "Skin Care", desc: "Facials & glow treatments", icon: "✨" }
-  ];
+  {
+    title: "Beauty Therapist",
+    desc: "Comprehensive training in skincare, facials, and client consultation techniques.",
+    icon: "🧖‍♀️"
+  },
+  {
+    title: "Hair Dressing",
+    desc: "Learn cutting, coloring, and professional salon hair styling techniques.",
+    icon: "✂️"
+  },
+  {
+    title: "Cosmetology",
+    desc: "Advanced beauty science including skin, hair, and cosmetic treatments.",
+    icon: "🧴"
+  },
+  {
+    title: "make-up",
+    desc: "Professional makeup techniques for bridal, fashion, and special occasions.",
+    icon: "💄"
+  },
+  {
+    title: "Hair Style",
+    desc: "Master modern and traditional hairstyles for events and bridal looks.",
+    icon: "💇‍♀️"
+  },
+  {
+  title: "Mehandi",
+  desc: "Beautiful mehndi designs for weddings and special occasions, featuring intricate patterns and traditional artistry.",
+  icon: "🌿",
+},
+  {
+    title: "Saree Draping",
+    desc: "Learn elegant saree draping styles for weddings and special occasions.",
+  //  icon: <img src="saree.png" alt="saree" style={{ width: 30 }} />
+    icon: "👗",
+  },
+  {
+    title: "Flower Making",
+    desc: "Create beautiful floral accessories for bridal hairstyles and decorations.",
+    icon: "🌸"
+  },
+  {
+    title: "Nail Art",
+    desc: "Creative nail design techniques including extensions, gel, and polish art.",
+    icon: "💅"
+  }
+];
 
+const handleNavigate = (title) => {
+    // Converts "Hair Dressing" to "hair-dressing"
+    const slug = title.toLowerCase().replace(/\s+/g, '-');
+    navigate(`/services/${slug}`);
+  };
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       
@@ -56,7 +102,11 @@ export default function OurServices() {
                 <Box className="flip-card-back">
                   <h3>{service.title}</h3>
                   <p>{service.desc}</p>
-                  <button className="btn btn-light mt-2">
+                  <button 
+                    className="btn btn-light mt-2 shadow-sm"
+                   onClick={() => handleNavigate(service.title)}
+                    style={{ fontWeight: 'bold', borderRadius: '20px' }}
+                  >
                     Explore
                   </button>
                 </Box>

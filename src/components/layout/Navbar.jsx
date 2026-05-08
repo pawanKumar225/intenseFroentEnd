@@ -22,7 +22,7 @@ export default function Navbar() {
             <li><Link className="nav-link" to="/about">About</Link></li>
             <li><Link className="nav-link" to="/services">Services</Link></li>
             <li><Link className="nav-link" to="/contact">Contact</Link></li>
-            <li><Link className="nav-link" to="/admin">Admin</Link></li>
+            <li><Link className="nav-link" to="/adminlogin">Admin</Link></li>
             <li><Link className="nav-link" to="/user">User</Link></li>
           </ul>
         </div>

@@ -324,7 +324,7 @@ code {
 .flip-card {
   width: 100%;
   /* max-width: 320px; */
-  height: 260px;
+  height: 160px;
   perspective: 500px;
 }
 
@@ -372,6 +372,7 @@ code {
   color: #fff;
   transform: rotateY(180deg);
   box-shadow: 0 12px 30px rgba(233, 30, 99, 0.3);
+  
 }
 
 /* Icon */
@@ -384,12 +385,12 @@ code {
 .flip-card-front h3,
 .flip-card-back h3 {
   font-size: 18px;
-  margin: 6px 0;
+  margin: 16px 0;
 }
 
 .flip-card-back p {
   font-size: 14px;
-  margin: 5px 0;
+  margin: -10px 0 !important;
 }
 
 /* ===== Entrance Animation ===== */
@@ -414,12 +415,12 @@ code {
 .delay-4 { animation-delay: 0.8s; }
 .delay-5 { animation-delay: 1s; }
 .delay-6 { animation-delay: 1.2s; }
-
-/* ===== Footer Main ===== */
+/* ===== Footer Background ===== */
 .footer-section {
-  background: linear-gradient(135deg, #1a1a1a, #2c003e);
+  background: linear-gradient(135deg, #1a0025, #3b003f);
   color: #fff;
   padding: 50px 0 20px;
+  position: relative;
 }
 
 /* Logo */
@@ -432,39 +433,70 @@ code {
 
 /* Titles */
 .footer-title {
-  font-weight: bold;
-  margin-bottom: 15px;
   color: #ff6f91;
+  font-weight: bold;
+  margin-bottom: 10px;
 }
 
 /* Text */
 .footer-text {
   font-size: 14px;
-  margin-bottom: 8px;
   opacity: 0.8;
+  margin-bottom: 6px;
 }
 
-/* Links */
 .footer-link {
-  color: #15cc2d;
-  /* font-weight: bold; */
-  cursor: pointer;
-  margin-bottom: 10px;
-  display: block;
-  font-size: 26px !important;
+  color: #00ff88;
+  font-weight: bold;
 }
 
-/* Social container */
+/* ===== CONTACT BUTTONS ===== */
+.contact-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Buttons */
+.contact-btn {
+  text-transform: none !important;
+  border-radius: 30px !important;
+  justify-content: flex-start;
+  font-size: 14px !important;
+}
+
+.contact-btn.call {
+  background: linear-gradient(135deg, #ff6f91, #ff3d68) !important;
+  color: #fff !important;
+}
+
+.contact-btn.email {
+  background: linear-gradient(135deg, #6a11cb, #2575fc) !important;
+  color: #fff !important;
+}
+
+/* ===== SOCIAL RIGHT POSITION ===== */
+.social-wrapper {
+  position: absolute;
+  right: 40px;
+  bottom: 80px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 12px 18px;
+  border-radius: 8px;
+}
+
+/* Title */
+.social-title {
+  margin-bottom: 8px;
+}
+
+/* Icons */
 .social-icons {
-  justify-content: flex-end;
+  display: flex;
+  gap: 10px;
 }
 
-/* On mobile center it */
-@media (max-width: 768px) {
-  .social-icons {
-    justify-content: center;
-  }
-}
 /* Buttons */
 .social-btn {
   background: #333 !important;
@@ -472,28 +504,70 @@ code {
   transition: 0.3s !important;
 }
 
-/* Hover Colors */
-.social-btn.fb:hover {
-  background: #1877f2 !important;
-}
+/* Hover */
+.social-btn.fb:hover { background: #1877f2 !important; }
+.social-btn.insta:hover { background: #e1306c !important; }
+.social-btn.whatsapp:hover { background: #25d366 !important; }
+.social-btn.email:hover { background: #ff6f91 !important; }
 
-.social-btn.insta:hover {
-  background: #e1306c !important;
-}
-
-.social-btn.whatsapp:hover {
-  background: #25d366 !important;
-}
-
-.social-btn.email:hover {
-  background: #ff6f91 !important;
-}
-
-/* Bottom */
+/* ===== Bottom ===== */
 .footer-bottom {
   border-top: 1px solid rgba(255,255,255,0.2);
   margin-top: 30px;
   padding-top: 15px;
   text-align: center;
   opacity: 0.7;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .social-wrapper {
+    position: static;
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  .social-icons {
+    justify-content: center;
+  }
+}
+/* Remove underline from links */
+.social-icons a {
+  text-decoration: none;
+}
+
+/* Custom Scroll to Top Button Styling */
+.scroll-to-top-btn {
+  transition: all 0.3s ease-in-out !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Optional: Adding a soft pulse effect so it's attractive */
+@keyframes pulse-pink {
+  0% { box-shadow: 0 0 0 0 rgba(233, 30, 99, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(233, 30, 99, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(233, 30, 99, 0); }
+}
+
+.scroll-to-top-btn:hover {
+  animation: pulse-pink 1.5s infinite;
+}
+
+
+
+/* Pulse effect for WhatsApp Sticky Button */
+.whatsapp-sticky-btn {
+  animation: whatsapp-pulse 2s infinite;
+}
+
+@keyframes whatsapp-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(37, 211, 102, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(37, 211, 102, 0);
+  }
 }

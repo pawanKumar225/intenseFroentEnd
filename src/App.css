@@ -183,3 +183,57 @@
   }
 }
 
+/* Styling the Admin login page background */
+.login-page-bg {
+  background: linear-gradient(135deg, #1a0025 0%, #3b003f 100%);
+  /* Alternatively, use a beauty-themed image: 
+     background: url('/beauty-bg.jpg') center/cover no-repeat; 
+  */
+  min-height: 100vh;
+}
+
+/* Ensure the Material UI primary color matches your brand */
+:root {
+  --primary-pink: #e91e63;
+}
+
+/* Custom Scrollbar for better UI */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #e91e63;
+  border-radius: 10px;
+}
+
+/* Form Paper Hover Effect */
+.MuiPaper-root {
+  transition: box-shadow 0.3s ease;
+  border: 1px solid #fce4ec;
+}
+.MuiPaper-root:hover {
+  box-shadow: 0 12px 40px rgba(233, 30, 99, 0.15);
+}
+
+/* Focus colors for TextFields to match Beauty Theme */
+.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: #e91e63 !important;
+}
+.MuiInputLabel-outlined.Mui-focused {
+  color: #e91e63 !important;
+}
+
+/* Ensure every field looks consistent */
+.MuiTextField-root {
+  margin-bottom: 8px;
+}
+
+/* Optional: Smooth transition for the submit button */
+button[type="submit"] {
+  transition: transform 0.2s ease-in-out;
+}
+
+button[type="submit"]:hover {
+  transform: scale(1.02);
+}
+
