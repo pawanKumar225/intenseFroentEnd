@@ -1,4 +1,4 @@
-// src/admin/HRModule.jsx
+// src/hr/HRModule.jsx
 import React, { useState } from 'react';
 import {
   Box,
@@ -42,17 +42,12 @@ import {
   Clear as ClearIcon,
   People as PeopleIcon,
   BusinessCenter as BusinessCenterIcon,
-  AttachMoney as AttachMoneyIcon,
-  CheckCircle as CheckCircleIcon
+  Email as EmailIcon,
+  Phone as PhoneIcon
 } from '@mui/icons-material';
 
-// Mock Data
-const initialHRMembers = [
-  { id: 1, name: 'John Manager', role: 'HR Manager', email: 'john@hr.com', phone: '+91 98765 43210', status: 'Active', joinDate: '2023-01-15', department: 'Human Resources', salary: '$75,000', employeeId: 'HR001' },
-  { id: 2, name: 'Sarah Recruiter', role: 'Talent Acquisition', email: 'sarah@hr.com', phone: '+91 98765 43211', status: 'Active', joinDate: '2023-03-20', department: 'Recruitment', salary: '$65,000', employeeId: 'HR002' },
-  { id: 3, name: 'Mike Coordinator', role: 'HR Coordinator', email: 'mike@hr.com', phone: '+91 98765 43212', status: 'Active', joinDate: '2023-02-10', department: 'Human Resources', salary: '$55,000', employeeId: 'HR003' },
-  { id: 4, name: 'Lisa Benefits', role: 'Benefits Specialist', email: 'lisa@hr.com', phone: '+91 98765 43213', status: 'Active', joinDate: '2023-04-05', department: 'Benefits', salary: '$70,000', employeeId: 'HR004' },
-  { id: 5, name: 'Tom Training', role: 'Training Coordinator', email: 'tom@hr.com', phone: '+91 98765 43214', status: 'Active', joinDate: '2023-05-12', department: 'Training', salary: '$60,000', employeeId: 'HR005' },
+// Mock Employee Data
+const initialEmployees = [
   { id: 1, name: 'John Manager', role: 'HR Manager', email: 'john@hr.com', phone: '+91 98765 43210', status: 'Active', joinDate: '2023-01-15', department: 'Human Resources', salary: '$75,000', employeeId: 'HR001' },
   { id: 2, name: 'Sarah Recruiter', role: 'Talent Acquisition', email: 'sarah@hr.com', phone: '+91 98765 43211', status: 'Active', joinDate: '2023-03-20', department: 'Recruitment', salary: '$65,000', employeeId: 'HR002' },
   { id: 3, name: 'Mike Coordinator', role: 'HR Coordinator', email: 'mike@hr.com', phone: '+91 98765 43212', status: 'Active', joinDate: '2023-02-10', department: 'Human Resources', salary: '$55,000', employeeId: 'HR003' },
@@ -64,45 +59,41 @@ const HRModule = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
-  const [hrMembers, setHrMembers] = useState(initialHRMembers);
+  const [employees, setEmployees] = useState(initialEmployees);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [departmentFilter, setDepartmentFilter] = useState('All');
   const [openDialog, setOpenDialog] = useState(false);
-  const [editingMember, setEditingMember] = useState(null);
+  const [editingEmployee, setEditingEmployee] = useState(null);
   const [formData, setFormData] = useState({ name: '', email: '', role: '', phone: '', department: '', salary: '' });
   const [page, setPage] = useState(1);
   const rowsPerPage = 5;
 
   const statusOptions = ['All', 'Active', 'Inactive'];
-  const departmentOptions = ['All', ...new Set(hrMembers.map(m => m.department))];
+  const departmentOptions = ['All', ...new Set(employees.map(e => e.department))];
 
-  const filteredMembers = hrMembers.filter(member => {
-    const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         member.employeeId?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'All' || member.status === statusFilter;
-    const matchesDepartment = departmentFilter === 'All' || member.department === departmentFilter;
+  const filteredEmployees = employees.filter(employee => {
+    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.employeeId?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || employee.status === statusFilter;
+    const matchesDepartment = departmentFilter === 'All' || employee.department === departmentFilter;
     return matchesSearch && matchesStatus && matchesDepartment;
   });
 
-  const paginatedMembers = filteredMembers.slice((page - 1) * rowsPerPage, page * rowsPerPage);
-  const pageCount = Math.ceil(filteredMembers.length / rowsPerPage);
+  const paginatedEmployees = filteredEmployees.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const pageCount = Math.ceil(filteredEmployees.length / rowsPerPage);
 
-  const activeMembers = filteredMembers.filter(m => m.status === 'Active').length;
-  const totalDepartments = [...new Set(filteredMembers.map(m => m.department))].length;
-  const totalSalary = filteredMembers.reduce((sum, m) => {
-    const salary = parseInt(m.salary?.replace(/[^0-9]/g, '') || 0);
-    return sum + salary;
-  }, 0);
+  const activeEmployees = filteredEmployees.filter(e => e.status === 'Active').length;
+  const totalDepartments = [...new Set(filteredEmployees.map(e => e.department))].length;
 
   const handleAddEdit = () => {
-    if (editingMember) {
-      setHrMembers(hrMembers.map(m => m.id === editingMember.id ? { ...editingMember, ...formData } : m));
+    if (editingEmployee) {
+      setEmployees(employees.map(e => e.id === editingEmployee.id ? { ...editingEmployee, ...formData } : e));
     } else {
-      const newId = hrMembers.length + 1;
+      const newId = employees.length + 1;
       const newEmployeeId = `HR${String(newId).padStart(3, '0')}`;
-      setHrMembers([...hrMembers, { 
+      setEmployees([...employees, { 
         id: newId, 
         ...formData, 
         status: 'Active', 
@@ -114,17 +105,17 @@ const HRModule = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this member?')) {
-      setHrMembers(hrMembers.filter(m => m.id !== id));
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      setEmployees(employees.filter(e => e.id !== id));
     }
   };
 
-  const handleOpenDialog = (member = null) => {
-    if (member) {
-      setEditingMember(member);
-      setFormData(member);
+  const handleOpenDialog = (employee = null) => {
+    if (employee) {
+      setEditingEmployee(employee);
+      setFormData(employee);
     } else {
-      setEditingMember(null);
+      setEditingEmployee(null);
       setFormData({ name: '', email: '', role: '', phone: '', department: '', salary: '' });
     }
     setOpenDialog(true);
@@ -132,8 +123,7 @@ const HRModule = () => {
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setEditingMember(null);
-    setFormData({ name: '', email: '', role: '', phone: '', department: '', salary: '' });
+    setEditingEmployee(null);
   };
 
   const clearFilters = () => {
@@ -146,50 +136,50 @@ const HRModule = () => {
   // Mobile Card View
   const MobileCardView = () => (
     <Stack spacing={2}>
-      {paginatedMembers.map((member) => (
-        <Card key={member.id} sx={{ borderRadius: 3 }}>
+      {paginatedEmployees.map((employee) => (
+        <Card key={employee.id} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 2 }}>
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
               <Box display="flex" alignItems="center" gap={1.5}>
-                <Avatar sx={{ bgcolor: '#1976d2', width: 45, height: 45 }}>
-                  {member.name.charAt(0)}
+                <Avatar sx={{ bgcolor: '#e91e63', width: 45, height: 45 }}>
+                  {employee.name.charAt(0)}
                 </Avatar>
                 <Box>
-                  <Typography variant="subtitle1" fontWeight={600}>{member.name}</Typography>
-                  <Chip label={member.employeeId} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                  <Typography variant="subtitle1" fontWeight={600}>{employee.name}</Typography>
+                  <Chip label={employee.employeeId} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
                 </Box>
               </Box>
-              <Chip label={member.status} color="success" size="small" />
+              <Chip label={employee.status} color="success" size="small" />
             </Box>
             
             <Grid container spacing={1.5}>
               <Grid item xs={6}>
                 <Typography variant="caption" color="textSecondary">Role</Typography>
-                <Typography variant="body2" fontWeight={500}>{member.role}</Typography>
+                <Typography variant="body2" fontWeight={500}>{employee.role}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="caption" color="textSecondary">Department</Typography>
-                <Typography variant="body2" fontWeight={500}>{member.department}</Typography>
+                <Typography variant="body2" fontWeight={500}>{employee.department}</Typography>
               </Grid>
               <Grid item xs={12}>
                 <Typography variant="caption" color="textSecondary">Email</Typography>
-                <Typography variant="body2" noWrap>{member.email}</Typography>
+                <Typography variant="body2" noWrap>{employee.email}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="caption" color="textSecondary">Phone</Typography>
-                <Typography variant="body2">{member.phone}</Typography>
+                <Typography variant="body2">{employee.phone}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="caption" color="textSecondary">Salary</Typography>
-                <Typography variant="body2" fontWeight={600} color="#1976d2">{member.salary}</Typography>
+                <Typography variant="body2" fontWeight={600} color="#e91e63">{employee.salary}</Typography>
               </Grid>
             </Grid>
             
             <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-              <IconButton size="small" onClick={() => handleOpenDialog(member)} color="primary">
+              <IconButton size="small" onClick={() => handleOpenDialog(employee)} color="primary">
                 <EditIcon fontSize="small" />
               </IconButton>
-              <IconButton size="small" onClick={() => handleDelete(member.id)} color="error">
+              <IconButton size="small" onClick={() => handleDelete(employee.id)} color="error">
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -206,7 +196,7 @@ const HRModule = () => {
         <TableHead sx={{ backgroundColor: '#f8fafc' }}>
           <TableRow>
             <TableCell><strong>ID</strong></TableCell>
-            <TableCell><strong>Member</strong></TableCell>
+            <TableCell><strong>Employee</strong></TableCell>
             <TableCell><strong>Role</strong></TableCell>
             <TableCell><strong>Department</strong></TableCell>
             <TableCell><strong>Status</strong></TableCell>
@@ -214,33 +204,33 @@ const HRModule = () => {
           </TableRow>
         </TableHead>
         <TableBody>
-          {paginatedMembers.length > 0 ? (
-            paginatedMembers.map((member) => (
-              <TableRow key={member.id} hover>
+          {paginatedEmployees.length > 0 ? (
+            paginatedEmployees.map((employee) => (
+              <TableRow key={employee.id} hover>
                 <TableCell>
-                  <Chip label={member.employeeId} size="small" variant="outlined" />
+                  <Chip label={employee.employeeId} size="small" variant="outlined" />
                 </TableCell>
                 <TableCell>
                   <Box display="flex" alignItems="center" gap={1.5}>
-                    <Avatar sx={{ bgcolor: '#1976d2', width: 32, height: 32, fontSize: '0.875rem' }}>
-                      {member.name.charAt(0)}
+                    <Avatar sx={{ bgcolor: '#e91e63', width: 32, height: 32, fontSize: '0.875rem' }}>
+                      {employee.name.charAt(0)}
                     </Avatar>
                     <Box>
-                      <Typography variant="body2" fontWeight={500}>{member.name}</Typography>
-                      <Typography variant="caption" color="textSecondary">{member.email}</Typography>
+                      <Typography variant="body2" fontWeight={500}>{employee.name}</Typography>
+                      <Typography variant="caption" color="textSecondary">{employee.email}</Typography>
                     </Box>
                   </Box>
                 </TableCell>
-                <TableCell>{member.role}</TableCell>
-                <TableCell>{member.department}</TableCell>
+                <TableCell>{employee.role}</TableCell>
+                <TableCell>{employee.department}</TableCell>
                 <TableCell>
-                  <Chip label={member.status} color="success" size="small" />
+                  <Chip label={employee.status} color="success" size="small" />
                 </TableCell>
                 <TableCell>
-                  <IconButton size="small" onClick={() => handleOpenDialog(member)} color="primary">
+                  <IconButton size="small" onClick={() => handleOpenDialog(employee)} color="primary">
                     <EditIcon fontSize="small" />
                   </IconButton>
-                  <IconButton size="small" onClick={() => handleDelete(member.id)} color="error">
+                  <IconButton size="small" onClick={() => handleDelete(employee.id)} color="error">
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </TableCell>
@@ -250,7 +240,7 @@ const HRModule = () => {
             <TableRow>
               <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                 <Typography variant="body1" color="textSecondary">
-                  No team members found
+                  No employees found
                 </Typography>
               </TableCell>
             </TableRow>
@@ -261,8 +251,8 @@ const HRModule = () => {
   );
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Header Section */}
+    <Container maxWidth="xl" sx={{ py: 2, px: { xs: 1, sm: 2, md: 3 } }}>
+      {/* Header */}
       <Box sx={{ mb: { xs: 3, sm: 4 }, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography 
@@ -274,14 +264,10 @@ const HRModule = () => {
               mb: 0.5
             }}
           >
-            HR Team Management
+            Employee Management
           </Typography>
-          <Typography 
-            variant="body2" 
-            color="textSecondary"
-            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
-          >
-            Manage your human resources team, track performance, and handle employee records
+          <Typography variant="body2" color="textSecondary">
+            Manage all employees, track performance, and handle HR operations
           </Typography>
         </Box>
         <Button 
@@ -290,83 +276,58 @@ const HRModule = () => {
           onClick={() => handleOpenDialog()} 
           sx={{ bgcolor: '#e91e63', '&:hover': { bgcolor: '#c2185b' } }}
         >
-          Add Member
+          Add Employee
         </Button>
       </Box>
 
       {/* Statistics Cards */}
       <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Total Members
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                    {filteredMembers.length}
+                  <Typography variant="body2" color="textSecondary">Total Employees</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#e91e63', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                    {filteredEmployees.length}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: alpha('#1976d2', 0.1), color: '#1976d2' }}>
+                <Avatar sx={{ bgcolor: alpha('#e91e63', 0.1), color: '#e91e63', width: 50, height: 50 }}>
                   <PeopleIcon />
                 </Avatar>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Active
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#10b981', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
-                    {activeMembers}
+                  <Typography variant="body2" color="textSecondary">Active Employees</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#4caf50', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                    {activeEmployees}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: alpha('#10b981', 0.1), color: '#10b981' }}>
-                  <CheckCircleIcon />
+                <Avatar sx={{ bgcolor: alpha('#4caf50', 0.1), color: '#4caf50', width: 50, height: 50 }}>
+                  <PeopleIcon />
                 </Avatar>
               </Box>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} sm={6} md={3}>
-          <Card sx={{ height: '100%' }}>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #e91e63 0%, #ff6f91 100%)', color: 'white' }}>
+            <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Departments
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 700, color: '#f59e0b', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>Departments</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
                     {totalDepartments}
                   </Typography>
                 </Box>
-                <Avatar sx={{ bgcolor: alpha('#f59e0b', 0.1), color: '#f59e0b' }}>
+                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white', width: 50, height: 50 }}>
                   <BusinessCenterIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={6} sm={6} md={3}>
-          <Card sx={{ height: '100%', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
-            <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography variant="body2" sx={{ opacity: 0.8, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    Total Salary
-                  </Typography>
-                  <Typography variant="h5" sx={{ fontWeight: 700, fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' } }}>
-                    ${(totalSalary / 1000).toFixed(0)}K
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}>
-                  <AttachMoneyIcon />
                 </Avatar>
               </Box>
             </CardContent>
@@ -374,7 +335,7 @@ const HRModule = () => {
         </Grid>
       </Grid>
 
-      {/* Filters Section */}
+      {/* Filters */}
       <Paper sx={{ p: { xs: 2, sm: 2.5 }, mb: { xs: 3, sm: 4 }, borderRadius: 3 }}>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }}>
           <TextField
@@ -418,7 +379,7 @@ const HRModule = () => {
         </Stack>
 
         <Typography variant="body2" sx={{ mt: 2, color: '#64748b' }}>
-          Showing {filteredMembers.length} of {hrMembers.length} team members
+          Showing {filteredEmployees.length} of {employees.length} employees
         </Typography>
       </Paper>
 
@@ -441,7 +402,7 @@ const HRModule = () => {
       {/* Add/Edit Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ bgcolor: '#f8fafc', py: 2 }}>
-          {editingMember ? '✏️ Edit Team Member' : '➕ Add New Team Member'}
+          {editingEmployee ? '✏️ Edit Employee' : '➕ Add New Employee'}
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 2 }}>
@@ -491,7 +452,7 @@ const HRModule = () => {
         <DialogActions sx={{ p: 2, bgcolor: '#f8fafc' }}>
           <Button onClick={handleCloseDialog}>Cancel</Button>
           <Button onClick={handleAddEdit} variant="contained" sx={{ bgcolor: '#e91e63', '&:hover': { bgcolor: '#c2185b' } }}>
-            {editingMember ? 'Update' : 'Add Member'}
+            {editingEmployee ? 'Update' : 'Add Employee'}
           </Button>
         </DialogActions>
       </Dialog>
