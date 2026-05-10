@@ -111,39 +111,7 @@ const EmployeeDashboard = () => {
         </Typography>
       </Paper>
 
-      {/* Quick Stats */}
-      <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{ mb: { xs: 2, sm: 3 } }}>
-        {stats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card sx={{ height: '100%', boxShadow: 2 }}>
-              <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography color="textSecondary" gutterBottom variant="body2" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="h4" component="div" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' }, color: stat.color }}>
-                      {stat.value}
-                    </Typography>
-                    {stat.change && (
-                      <Box display="flex" alignItems="center" mt={0.5}>
-                        <TrendingUpIcon sx={{ fontSize: 12, color: 'green', mr: 0.5 }} />
-                        <Typography variant="caption" color="green">
-                          {stat.change}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                  <Avatar sx={{ bgcolor: stat.bgColor, color: stat.color, width: { xs: 45, sm: 55 }, height: { xs: 45, sm: 55 } }}>
-                    {stat.icon}
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
+     
       {/* Charts Section */}
       <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{ mb: { xs: 2, sm: 3 } }}>
         {/* Attendance Overview */}
@@ -285,50 +253,7 @@ const EmployeeDashboard = () => {
           </Paper>
         </Grid>
 
-        {/* Quick Actions */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: { xs: 2, sm: 2.5 }, borderRadius: 3 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-              Quick Actions
-            </Typography>
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={12} sm={4}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  startIcon={<EventIcon />}
-                  onClick={() => navigate('/employee/attendance')}
-                  sx={{ py: 1.5, bgcolor: '#2196f3' }}
-                >
-                  Mark Attendance
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  color="warning"
-                  startIcon={<LeaveIcon />}
-                  onClick={() => navigate('/employee/apply-leave')}
-                  sx={{ py: 1.5 }}
-                >
-                  Apply for Leave
-                </Button>
-              </Grid>
-              <Grid item xs={12} sm={4}>
-                <Button 
-                  fullWidth 
-                  variant="contained" 
-                  color="success"
-                  startIcon={<ScheduleIcon />}
-                  sx={{ py: 1.5 }}
-                >
-                  Check Schedule
-                </Button>
-              </Grid>
-            </Grid>
-          </Paper>
-        </Grid>
+ 
       </Grid>
     </Container>
   );

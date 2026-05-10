@@ -379,7 +379,7 @@ export default function AdminLogin() {
       
       if (response.success) {
         // Store user data in localStorage
-        localStorage.setItem('token', response.token);
+        localStorage.setItem('token', response.data?.token);
         localStorage.setItem('userEmail', formData.email);
         
         // Get user role from response

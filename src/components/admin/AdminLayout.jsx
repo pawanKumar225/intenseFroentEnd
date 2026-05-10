@@ -64,9 +64,8 @@ const AdminLayout = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminEmail');
-    localStorage.removeItem('adminData');
+    console.log("Logout..........")
+    localStorage.clear();
     navigate('/admin/login');
   };
 

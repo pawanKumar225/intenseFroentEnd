@@ -129,9 +129,9 @@ const EmployeeLayout = () => {
     if (isMobile) setMobileOpen(false);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('employeeToken');
-    localStorage.removeItem('employeeInfo');
+const handleLogout = () => {
+    console.log("Logout..........")
+    localStorage.clear();
     navigate('/admin/login');
   };
 
@@ -242,31 +242,20 @@ const EmployeeLayout = () => {
       )}
 
       {/* Logout Button */}
-      <Box sx={{ p: collapsed ? 1 : 2, pb: 3 }}>
-        <ListItemButton
-          onClick={handleLogout}
-          sx={{
-            borderRadius: 2,
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            backgroundColor: alpha('#f44336', 0.1),
-            '&:hover': { backgroundColor: alpha('#f44336', 0.2) }
-          }}
-        >
-          <ListItemIcon sx={{ 
-            color: '#f44336', 
-            minWidth: collapsed ? 'auto' : 42,
-            justifyContent: 'center'
-          }}>
-            <LogoutIcon />
-          </ListItemIcon>
-          {!collapsed && (
-            <ListItemText 
-              primary="Logout" 
-              sx={{ '& .MuiTypography-root': { color: '#f44336', fontWeight: 600 } }}
-            />
-          )}
-        </ListItemButton>
-      </Box>
+       <Box sx={{ p: collapsed ? 1 : 2, borderTop: '1px solid #1e293b' }}>
+             <ListItemButton 
+               onClick={handleLogout} 
+               sx={{ 
+                 justifyContent: collapsed ? 'center' : 'flex-start',
+                 '&:hover': { backgroundColor: '#1e293b' }
+               }}
+             >
+               <ListItemIcon sx={{ minWidth: collapsed ? 'auto' : 42, justifyContent: 'center' }}>
+                 <LogoutIcon />
+               </ListItemIcon>
+               {!collapsed && <ListItemText primary="Logout" sx={{ '& .MuiTypography-root': { color: '#cbd5e1' } }} />}
+             </ListItemButton>
+           </Box>
     </Box>
   );
 
