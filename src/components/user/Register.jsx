@@ -25,7 +25,8 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
-  Stack
+  Stack,
+  CircularProgress
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -35,12 +36,15 @@ import {
   CalendarToday as CalendarIcon,
   Person as PersonIcon,
   FamilyRestroom as FamilyIcon,
-  WorkspacePremium as PackageIcon,
   Email as EmailIcon,
   Cancel as CancelIcon
 } from '@mui/icons-material';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import {Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+
+const API_BASE_URL =  'http://localhost:5000';
+
 const BeautyAcademyRegistration = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -61,7 +65,9 @@ const BeautyAcademyRegistration = () => {
   const [isTermsChecked, setIsTermsChecked] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [registrationError, setRegistrationError] = useState('');
   const [activeStep, setActiveStep] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   // Package options
   const packageOptions = [
@@ -199,7 +205,7 @@ const BeautyAcademyRegistration = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const allFields = ['name', 'fatherName', 'dateOfBirth', 'aadharNumber', 'presentAddress', 
@@ -211,22 +217,40 @@ const BeautyAcademyRegistration = () => {
     setTouched(touchedFields);
     
     if (validateForm()) {
-      setRegistrationSuccess(true);
-      setActiveStep(1);
+      setLoading(true);
+      setRegistrationError('');
       
-      const selectedPackage = packageOptions.find(pkg => pkg.value === formData.packageDetails);
-      const registrationData = {
-        ...formData,
-        packageDetails: selectedPackage ? selectedPackage.label : formData.packageDetails
-      };
-      
-      console.log('Form Data:', registrationData);
-      
-      setTimeout(() => {
+      try {
+        const selectedPackage = packageOptions.find(pkg => pkg.value === formData.packageDetails);
+        
+        const registrationData = {
+          ...formData,
+          packageDetails: selectedPackage ? selectedPackage.label : formData.packageDetails,
+          packageValue: formData.packageDetails,
+          packagePrice: selectedPackage ? selectedPackage.price : '',
+          packageDuration: selectedPackage ? selectedPackage.duration : ''
+        };
+        
+        const response = await axios.post(`${API_BASE_URL}/api/register`, registrationData);
+        
+        if (response.data.success) {
+          setRegistrationSuccess(true);
+          setActiveStep(1);
+          
+          // Reset form after 3 seconds
+          setTimeout(() => {
+            resetForm();
+            setActiveStep(0);
+            setRegistrationSuccess(false);
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        setRegistrationError(error.response?.data?.message || 'Registration failed. Please try again.');
         setRegistrationSuccess(false);
-        resetForm();
-        setActiveStep(0);
-      }, 3000);
+      } finally {
+        setLoading(false);
+      }
     } else {
       const firstError = document.querySelector('.error-field');
       if (firstError) {
@@ -253,9 +277,8 @@ const BeautyAcademyRegistration = () => {
     setTouched({});
     setIsTermsChecked(false);
     setRegistrationSuccess(false);
+    setRegistrationError('');
     setActiveStep(0);
-    
-    alert('Form has been reset successfully!');
   };
 
   const handleTermsOpen = () => {
@@ -302,6 +325,7 @@ const BeautyAcademyRegistration = () => {
                 height: 'auto',
                 borderRadius: '10px'
               }}
+              onError={(e) => e.target.style.display = 'none'}
             />
           </div>
           <Typography 
@@ -335,7 +359,13 @@ const BeautyAcademyRegistration = () => {
 
         {registrationSuccess && (
           <Alert severity="success" className="mb-4" sx={{ borderRadius: '10px' }}>
-            🎉 Registration successful! Welcome to Intense Beauty Academy!
+            🎉 Registration successful! Welcome to Intense Beauty Academy! A confirmation email has been sent to your email address.
+          </Alert>
+        )}
+
+        {registrationError && (
+          <Alert severity="error" className="mb-4" sx={{ borderRadius: '10px' }}>
+            ❌ {registrationError}
           </Alert>
         )}
 
@@ -388,7 +418,7 @@ const BeautyAcademyRegistration = () => {
               />
             </Grid>
 
-            {/* Row 2: Date of Birth and Aadhar Number - Fixed placeholder issue */}
+            {/* Row 2: Date of Birth and Aadhar Number */}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -412,10 +442,6 @@ const BeautyAcademyRegistration = () => {
                   '& input[type="date"]::-webkit-calendar-picker-indicator': {
                     cursor: 'pointer',
                     marginLeft: 'auto'
-                  },
-                  '& input[type="date"]::before': {
-                    content: '""',
-                    display: 'none'
                   }
                 }}
               />
@@ -501,7 +527,7 @@ const BeautyAcademyRegistration = () => {
               />
             </Grid>
 
-            {/* Row 5: Date of Joining and Package Details - Fixed placeholder and increased width */}
+            {/* Row 5: Date of Joining and Package Details - FIXED DROPDOWN WIDTH */}
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
@@ -535,30 +561,61 @@ const BeautyAcademyRegistration = () => {
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <FormControl fullWidth error={!!showError('packageDetails')} required sx={{ minWidth: '100%' }}>
-                <InputLabel id="package-label">Package Details</InputLabel>
+              <FormControl 
+                fullWidth 
+                error={!!showError('packageDetails')} 
+                required 
+                sx={{ 
+                  minWidth: '100%',
+                  '& .MuiInputLabel-root': {
+                    backgroundColor: 'white',
+                    padding: '0 4px'
+                  }
+                }}
+              >
+                <InputLabel id="package-label">Package Details *</InputLabel>
                 <Select
-                  fullWidth
                   labelId="package-label"
                   name="packageDetails"
                   value={formData.packageDetails}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  label="Package Details"
+                  label="Package Details *"
                   className={showError('packageDetails') ? 'error-field' : ''}
                   sx={{
+                    width: '100%',
                     '& .MuiSelect-select': {
                       whiteSpace: 'normal',
                       wordWrap: 'break-word',
-                      padding: '16px 14px'
+                      padding: '16px 14px',
+                      minHeight: 'auto',
+                      display: 'flex',
+                      alignItems: 'center'
+                    }
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      style: {
+                        maxHeight: 300,
+                        width: 'auto',
+                        minWidth: '300px'
+                      }
                     }
                   }}
                 >
                   <MenuItem value="" disabled>
-                    <em>Select a course package</em>
+                    Select a course package
                   </MenuItem>
                   {packageOptions.map((option) => (
-                    <MenuItem key={option.value} value={option.value} sx={{ whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                    <MenuItem 
+                      key={option.value} 
+                      value={option.value}
+                      sx={{ 
+                        whiteSpace: 'normal', 
+                        wordWrap: 'break-word',
+                        padding: '10px 16px'
+                      }}
+                    >
                       {option.label}
                     </MenuItem>
                   ))}
@@ -686,8 +743,17 @@ const BeautyAcademyRegistration = () => {
             </Grid>
 
             {/* Row 9: Register and Cancel Buttons */}
-            {/* <Grid item xs={12}>
-              <Stack direction="row" spacing={2} justifyContent="center">
+            <Grid item xs={12}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: 2,
+                  mt: 2
+                }}
+              >
                 <Button
                   type="button"
                   variant="outlined"
@@ -696,112 +762,50 @@ const BeautyAcademyRegistration = () => {
                   onClick={resetForm}
                   startIcon={<CancelIcon />}
                   sx={{
-                    padding: '12px 24px',
-                    fontWeight: 'bold',
-                    fontSize: '16px',
-                    borderRadius: '10px',
-                    borderWidth: '2px',
-                    '&:hover': {
-                      borderWidth: '2px',
-                    }
+                    padding: "12px 24px",
+                    fontWeight: "bold",
+                    fontSize: "16px",
+                    borderRadius: "30px",
+                    borderWidth: "2px"
                   }}
                 >
                   Cancel / Reset
                 </Button>
+
                 <Button
                   type="submit"
                   variant="contained"
-                  color="primary"
                   size="large"
+                  disabled={loading}
                   sx={{
-                    padding: '12px 48px',
-                    fontWeight: 'bold',
-                    fontSize: '18px',
-                    background: 'linear-gradient(45deg, #ff6b6b, #ff8e8e)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #ff5252, #ff6b6b)',
-                    },
-                    borderRadius: '10px'
+                    padding: "12px 48px",
+                    fontWeight: "bold",
+                    fontSize: "18px",
+                    background: "linear-gradient(45deg, #ff6b6b, #ff8e8e)",
+                    borderRadius: "30px",
+                    "&:hover": {
+                      background: "linear-gradient(45deg, #ff5252, #ff6b6b)"
+                    }
                   }}
                 >
-                  Register Now
+                  {loading ? <CircularProgress size={24} color="inherit" /> : "Register Now"}
                 </Button>
 
-                <Typography variant="body1" color="textSecondary">
-                                 <Link to="/user" style={{ color: '#e91e63', fontWeight: 'bold', textDecoration: 'none', marginBottom: '80px' }}>
-                          Back
-                           </Link>
-                               </Typography>
-              </Stack>
-            </Grid> */}
-
-
-            <Grid item xs={12}>
-  <Box
-    sx={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      flexWrap: "wrap",
-      gap: 2,
-      mt: 2
-    }}
-  >
-
-    {/* LEFT - Cancel */}
-    <Button
-      type="button"
-      variant="outlined"
-      color="secondary"
-      size="large"
-      onClick={resetForm}
-      startIcon={<CancelIcon />}
-      sx={{
-        padding: "12px 24px",
-        fontWeight: "bold",
-        fontSize: "16px",
-        borderRadius: "30px",
-        borderWidth: "2px"
-      }}
-    >
-      Cancel / Reset
-    </Button>
-
-    {/* CENTER - Register */}
-    <Button
-      type="submit"
-      variant="contained"
-      size="large"
-      sx={{
-        padding: "12px 48px",
-        fontWeight: "bold",
-        fontSize: "18px",
-        background: "linear-gradient(45deg, #ff6b6b, #ff8e8e)",
-        borderRadius: "30px",
-        "&:hover": {
-          background: "linear-gradient(45deg, #ff5252, #ff6b6b)"
-        }
-      }}
-    >
-      Register Now
-    </Button>
-
-    {/* RIGHT - Back */}
-    <Typography>
-      <Link
-        to="/user"
-        style={{
-          color: "#e91e63",
-          fontWeight: "bold",
-          cursor: "pointer"
-        }}
-      >
-        ← Back
-      </Link>
-    </Typography>
-
-  </Box>
-</Grid>
+                <Typography>
+                  <Link
+                    to="/user"
+                    style={{
+                      color: "#e91e63",
+                      fontWeight: "bold",
+                      cursor: "pointer",
+                      textDecoration: "none"
+                    }}
+                  >
+                    ← Back
+                  </Link>
+                </Typography>
+              </Box>
+            </Grid>
           </Grid>
         </form>
 

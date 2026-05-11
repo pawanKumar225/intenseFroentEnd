@@ -136,7 +136,8 @@ const CreateUser = () => {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          role: formData.role
+          role: formData.role,
+          isPasswordChanged: false
         })
       });
       

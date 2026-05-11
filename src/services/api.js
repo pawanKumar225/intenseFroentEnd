@@ -1,3 +1,5 @@
+
+
 // src/services/api.js
 const API_BASE_URL = 'http://localhost:5000/api';
 
@@ -7,16 +9,16 @@ class AdminAPI {
     }
 
     getToken() {
-        return localStorage.getItem('adminToken');
+        return localStorage.getItem('adminToken') || localStorage.getItem('token');
     }
 
-   // src/services/api.js (Add this method if missing)
-isLoggedIn() {
-  const token = localStorage.getItem('adminToken');
-  return !!token;
-}
+    isLoggedIn() {
+        const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+        return !!token;
+    }
+
     getCurrentAdmin() {
-        const adminData = localStorage.getItem('adminData');
+        const adminData = localStorage.getItem('adminData') || localStorage.getItem('userData');
         return adminData ? JSON.parse(adminData) : null;
     }
 
@@ -27,11 +29,15 @@ isLoggedIn() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
             });
-            console.log("base URL:", `${API_BASE_URL}/login`)
+            
             const data = await response.json();
+            
             if (data.success) {
+                // Store in both formats for compatibility
                 localStorage.setItem('adminToken', data.data.token);
+                localStorage.setItem('token', data.data.token);
                 localStorage.setItem('adminData', JSON.stringify(data.data.admin));
+                localStorage.setItem('userData', JSON.stringify(data.data.admin));
                 this.token = data.data.token;
             }
             return data;
@@ -41,7 +47,6 @@ isLoggedIn() {
         }
     }
 
-// Change Password
     async changePassword(oldPassword, newPassword) {
         try {
             const token = this.getToken();
@@ -64,9 +69,39 @@ isLoggedIn() {
             };
         }
     }
+
+    async firstTimePasswordChange(newPassword, confirmPassword) {
+        try {
+            const token = this.getToken();
+            const response = await fetch(`${API_BASE_URL}/admin/first-time-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ newPassword, confirmPassword })
+            });
+            
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('First time password change error:', error);
+            return {
+                success: false,
+                message: 'Network error. Please try again.'
+            };
+        }
+    }
+
     logout() {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminData');
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('isFirstTimeLogin');
         this.token = null;
     }
 
