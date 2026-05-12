@@ -7,11 +7,17 @@ import StudentDashboard from '../user/StudentDashboard';
 import ProtectedRoute from "../../components/ProtectedRoute";
 
 const StudentRoutes = () => {
+  // Get token to check if user is logged in
+  const token = localStorage.getItem('studentToken');
+  const isAuthenticated = !!token;
+
   return (
     <Routes>
+      {/* Public Routes - accessible without login */}
       <Route path="/login" element={<UserLogin />} />
       <Route path="/register" element={<UserRegister />} />
-      <Route path="/first-time-password" element={<StudentFirstTimePasswordChange />} />
+      
+      {/* Protected Routes - require authentication */}
       <Route 
         path="/dashboard" 
         element={
@@ -20,7 +26,29 @@ const StudentRoutes = () => {
           </ProtectedRoute>
         } 
       />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      
+      <Route 
+        path="/first-time-password" 
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <StudentFirstTimePasswordChange />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Default redirects */}
+      <Route path="/" element={
+        isAuthenticated ? 
+        <Navigate to="/user/dashboard" replace /> : 
+        <Navigate to="/user/login" replace />
+      } />
+      
+      {/* Catch all - redirect based on auth state */}
+      <Route path="*" element={
+        isAuthenticated ? 
+        <Navigate to="/user/dashboard" replace /> : 
+        <Navigate to="/user/login" replace />
+      } />
     </Routes>
   );
 };

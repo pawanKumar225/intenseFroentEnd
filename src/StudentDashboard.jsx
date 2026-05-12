@@ -187,9 +187,9 @@ const StudentDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+   localStorage.clear();
     navigate('/student/login');
+    console.log("Logout.................")
   };
 
   const handleCheckIn = () => {
@@ -702,9 +702,9 @@ const StudentDashboard = () => {
                         {student?.name?.[0] || 'S'}
                       </Avatar>
                       <Typography variant="h6">{student?.name || 'Student Name'}</Typography>
-                      <Typography variant="body2" color="textSecondary">
+                      {/* <Typography variant="body2" color="textSecondary">
                         {student?.email || 'student@example.com'}
-                      </Typography>
+                      </Typography> */}
                       <Divider sx={{ my: 2 }} />
                       <Box textAlign="left">
                         <Typography variant="body2" paragraph>

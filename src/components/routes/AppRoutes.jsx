@@ -28,7 +28,7 @@ export default function AppRoutes() {
       <Route path="/services/:serviceId" element={<ServiceDetail />} />
       
       {/* Student Module Routes */}
-      <Route path="/user/*" element={<StudentRoutes />} />
+       <Route path="/user/*" element={<StudentRoutes />} />
       
       {/* Admin Module Routes */}
       <Route path="/admin/*" element={<AdminRoutes />} />

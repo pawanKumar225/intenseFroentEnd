@@ -686,7 +686,203 @@
 
 
 
-// src/components/student/Login.jsx
+// // src/components/student/Login.jsx
+// import React, { useState } from 'react';
+// import {
+//   Container,
+//   Paper,
+//   TextField,
+//   Button,
+//   Typography,
+//   Box,
+//   Alert,
+//   CircularProgress,
+//   InputAdornment,
+//   IconButton
+// } from '@mui/material';
+// import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
+// import axios from 'axios';
+// import { useNavigate } from 'react-router-dom';
+
+// const API_BASE_URL = 'http://localhost:5000';
+
+// const Login = () => {
+//   const [formData, setFormData] = useState({
+//     email: '',
+//     password: ''
+//   });
+//   const [showPassword, setShowPassword] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState('');
+//   const navigate = useNavigate();
+
+//   const handleChange = (e) => {
+//     setFormData({
+//       ...formData,
+//       [e.target.name]: e.target.value
+//     });
+//     setError('');
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setError('');
+
+//     try {
+//       const response = await axios.post(`${API_BASE_URL}/api/user/login`, {
+//         email: formData.email,
+//         password: formData.password
+//       });
+//       console.log("Student Login...........", response)
+
+//       if (response.data.success) {
+//         const { token, user } = response.data.data;
+        
+//         // Store token and user data
+//         localStorage.setItem('studentToken', token);
+//         localStorage.setItem('studentData', JSON.stringify(user));
+        
+//         // Check if password needs to be changed (first-time login)
+//         if (response.data.data.requiresPasswordChange === true || !user.isPasswordChanged) {
+//           // Redirect to first-time password setup
+
+//           console.log("first-time-change")
+//           navigate('/user/first-time-password');
+//         } else {
+//           // Normal login - redirect to dashboard
+//           console.log("dashbording.........")
+//           navigate('/user/dashboard');
+//         }
+//       }
+//     } catch (err) {
+//       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <Container maxWidth="sm" sx={{ py: 5 }}>
+//       <Paper elevation={3} sx={{ p: 4, borderRadius: '20px' }}>
+//         <Box textAlign="center" mb={4}>
+//           <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
+//             Student Login
+//           </Typography>
+//           <Typography variant="body2" color="textSecondary">
+//             Enter your credentials to access your dashboard
+//           </Typography>
+//         </Box>
+
+//         {error && (
+//           <Alert severity="error" sx={{ mb: 3, borderRadius: '10px' }}>
+//             {error}
+//           </Alert>
+//         )}
+
+//         <form onSubmit={handleSubmit}>
+//           <TextField
+//             fullWidth
+//             label="Email Address"
+//             name="email"
+//             type="email"
+//             value={formData.email}
+//             onChange={handleChange}
+//             margin="normal"
+//             required
+//             InputProps={{
+//               startAdornment: (
+//                 <InputAdornment position="start">
+//                   <Email color="primary" />
+//                 </InputAdornment>
+//               )
+//             }}
+//           />
+
+//           <TextField
+//             fullWidth
+//             label="Password"
+//             name="password"
+//             type={showPassword ? 'text' : 'password'}
+//             value={formData.password}
+//             onChange={handleChange}
+//             margin="normal"
+//             required
+//             InputProps={{
+//               startAdornment: (
+//                 <InputAdornment position="start">
+//                   <Lock color="primary" />
+//                 </InputAdornment>
+//               ),
+//               endAdornment: (
+//                 <InputAdornment position="end">
+//                   <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+//                     {showPassword ? <VisibilityOff /> : <Visibility />}
+//                   </IconButton>
+//                 </InputAdornment>
+//               )
+//             }}
+//           />
+
+//           <Button
+//             type="submit"
+//             fullWidth
+//             variant="contained"
+//             size="large"
+//             disabled={loading}
+//             sx={{
+//               mt: 3,
+//               mb: 2,
+//               py: 1.5,
+//               background: 'linear-gradient(45deg, #ff6b6b, #ff8e8e)',
+//               borderRadius: '30px',
+//               fontWeight: 'bold',
+//               '&:hover': {
+//                 background: 'linear-gradient(45deg, #ff5252, #ff6b6b)'
+//               }
+//             }}
+//           >
+//             {loading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
+//           </Button>
+
+//           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+//             <Button
+//               type="button"
+//               color="primary"
+//               onClick={() => navigate('/student/forgot-password')}
+//               sx={{ textTransform: 'none' }}
+//             >
+//               Forgot Password?
+//             </Button>
+//             <Button
+//               type="button"
+//               color="primary"
+//               onClick={() => navigate('/user/register')}
+//               sx={{ textTransform: 'none' }}
+//             >
+//               New Student? Register
+//             </Button>
+//           </Box>
+//         </form>
+
+//         <Box mt={3} p={2} bgcolor="#e3f2fd" borderRadius={2}>
+//           <Typography variant="caption" color="textSecondary" display="block">
+//             📧 <strong>New Student?</strong> After registration, you'll receive a default password via email.
+//           </Typography>
+//           <Typography variant="caption" color="textSecondary" display="block">
+//             🔐 <strong>First-time login:</strong> You'll be prompted to change your password immediately.
+//           </Typography>
+//         </Box>
+//       </Paper>
+//     </Container>
+//   );
+// };
+
+// export default Login;
+
+
+
+// src/user/userLogin.jsx
 import React, { useState } from 'react';
 import {
   Container,
@@ -697,16 +893,17 @@ import {
   Box,
   Alert,
   CircularProgress,
-  InputAdornment,
-  IconButton
+  IconButton,
+  InputAdornment
 } from '@mui/material';
-import { Visibility, VisibilityOff, Email, Lock } from '@mui/icons-material';
-import axios from 'axios';
+import { Visibility, VisibilityOff, School as SchoolIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000';
 
-const Login = () => {
+const UserLogin = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -714,7 +911,14 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+
+  // Check if already logged in
+  React.useEffect(() => {
+    const token = localStorage.getItem('studentToken');
+    if (token) {
+      navigate('/user/dashboard', { replace: true });
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -726,6 +930,12 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -734,48 +944,54 @@ const Login = () => {
         email: formData.email,
         password: formData.password
       });
-      console.log("Student Login...........", response)
 
       if (response.data.success) {
-        const { token, user } = response.data.data;
+        const { token, user, requiresPasswordChange } = response.data.data;
         
         // Store token and user data
         localStorage.setItem('studentToken', token);
         localStorage.setItem('studentData', JSON.stringify(user));
         
-        // Check if password needs to be changed (first-time login)
-        if (response.data.data.requiresPasswordChange === true || !user.isPasswordChanged) {
-          // Redirect to first-time password setup
-
-          console.log("first-time-change")
-          navigate('/user/first-time-password');
+        console.log('Login successful, token stored:', !!localStorage.getItem('studentToken'));
+        
+        // Check if password change is required
+        if (requiresPasswordChange) {
+          navigate('/user/first-time-password', { replace: true });
         } else {
-          // Normal login - redirect to dashboard
-          console.log("dashbording.........")
-          navigate('/user/dashboard');
+          // Use window.location for hard redirect to ensure state reset
+          window.location.href = '/user/dashboard';
         }
+      } else {
+        setError(response.data.message || 'Login failed');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      setError(err.response?.data?.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 5 }}>
-      <Paper elevation={3} sx={{ p: 4, borderRadius: '20px' }}>
-        <Box textAlign="center" mb={4}>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
+    <Container maxWidth="sm" sx={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      alignItems: 'center',
+      bgcolor: '#f5f5f5'
+    }}>
+      <Paper elevation={3} sx={{ p: 4, width: '100%', borderRadius: 3 }}>
+        <Box textAlign="center" mb={3}>
+          <SchoolIcon sx={{ fontSize: 60, color: '#ff6b6b' }} />
+          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
             Student Login
           </Typography>
           <Typography variant="body2" color="textSecondary">
-            Enter your credentials to access your dashboard
+            Welcome back! Please login to your account
           </Typography>
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3, borderRadius: '10px' }}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
             {error}
           </Alert>
         )}
@@ -790,13 +1006,7 @@ const Login = () => {
             onChange={handleChange}
             margin="normal"
             required
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Email color="primary" />
-                </InputAdornment>
-              )
-            }}
+            sx={{ mb: 2 }}
           />
 
           <TextField
@@ -809,11 +1019,6 @@ const Login = () => {
             margin="normal"
             required
             InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Lock color="primary" />
-                </InputAdornment>
-              ),
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
@@ -828,54 +1033,36 @@ const Login = () => {
             type="submit"
             fullWidth
             variant="contained"
-            size="large"
             disabled={loading}
             sx={{
               mt: 3,
               mb: 2,
+              bgcolor: '#ff6b6b',
+              '&:hover': { bgcolor: '#ff5252' },
               py: 1.5,
-              background: 'linear-gradient(45deg, #ff6b6b, #ff8e8e)',
-              borderRadius: '30px',
-              fontWeight: 'bold',
-              '&:hover': {
-                background: 'linear-gradient(45deg, #ff5252, #ff6b6b)'
-              }
+              fontSize: '1rem',
+              fontWeight: 'bold'
             }}
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
           </Button>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
-            <Button
-              type="button"
-              color="primary"
-              onClick={() => navigate('/student/forgot-password')}
-              sx={{ textTransform: 'none' }}
-            >
-              Forgot Password?
-            </Button>
-            <Button
-              type="button"
-              color="primary"
-              onClick={() => navigate('/user/register')}
-              sx={{ textTransform: 'none' }}
-            >
-              New Student? Register
-            </Button>
+          <Box textAlign="center">
+            <Typography variant="body2" color="textSecondary">
+              Don't have an account?{' '}
+              <Button 
+                color="primary" 
+                onClick={() => navigate('/user/register')}
+                sx={{ textTransform: 'none', color: '#ff6b6b' }}
+              >
+                Register here
+              </Button>
+            </Typography>
           </Box>
         </form>
-
-        <Box mt={3} p={2} bgcolor="#e3f2fd" borderRadius={2}>
-          <Typography variant="caption" color="textSecondary" display="block">
-            📧 <strong>New Student?</strong> After registration, you'll receive a default password via email.
-          </Typography>
-          <Typography variant="caption" color="textSecondary" display="block">
-            🔐 <strong>First-time login:</strong> You'll be prompted to change your password immediately.
-          </Typography>
-        </Box>
       </Paper>
     </Container>
   );
 };
 
-export default Login;
+export default UserLogin;

@@ -1,5 +1,5 @@
 // src/components/student/StudentDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Container,
   Grid,
@@ -18,20 +18,21 @@ import {
   Toolbar,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   useTheme,
   useMediaQuery,
   CircularProgress,
   Alert,
-  Button
+  Button,
+  Snackbar
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
   Person as PersonIcon,
   School as SchoolIcon,
   Assignment as AssignmentIcon,
-  Settings as SettingsIcon,
   ExitToApp as LogoutIcon,
   Menu as MenuIcon,
   CheckCircle as CheckCircleIcon,
@@ -41,11 +42,13 @@ import {
   Email as EmailIcon,
   Phone as PhoneIcon,
   LocationOn as LocationIcon,
-  Star as StarIcon
+  Refresh as RefreshIcon,
+  SpaceDashboard as SpaceDashboardIcon,
+  Book as BookIcon,
+  History as HistoryIcon
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 const API_BASE_URL = 'http://localhost:5000';
 
@@ -53,56 +56,145 @@ const StudentDashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Refs for scrolling to sections
+  const dashboardRef = useRef(null);
+  const personalInfoRef = useRef(null);
+  const courseInfoRef = useRef(null);
+  const courseProgressRef = useRef(null);
+  const recentActivityRef = useRef(null);
   
   const [userData, setUserData] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [activeSection, setActiveSection] = useState('dashboard');
+  
+  // Course progress state
   const [courseProgress, setCourseProgress] = useState({
-    completed: 35,
-    totalModules: 12,
-    completedModules: 4,
-    currentModule: "Introduction to Beauty & Cosmetology",
-    nextModule: "Skin Care Fundamentals",
-    assignments: 3,
-    completedAssignments: 1
+    completed: 0,
+    totalModules: 0,
+    completedModules: 0,
+    currentModule: "",
+    nextModule: "",
+    assignments: 0,
+    completedAssignments: 0
   });
 
-  // Fetch user data on component mount
-  useEffect(() => {
-    fetchUserData();
-    // Check if user is logged in
-    const token = localStorage.getItem('studentToken');
-    if (!token) {
-      navigate('/student/login');
-    }
-  }, [navigate]);
-
-  const fetchUserData = async () => {
+  // Fetch dashboard data function
+  const fetchDashboardData = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('studentToken');
+      
       if (!token) {
-        navigate('/student/login');
+        console.log('No token found in fetchDashboardData');
+        navigate('/user/login', { replace: true });
         return;
       }
 
-      const response = await axios.get(`${API_BASE_URL}/api/student/profile`, {
+      const config = {
         headers: {
           'Authorization': `Bearer ${token}`
         }
-      });
+      };
 
-      if (response.data.success) {
-        setUserData(response.data.data);
+      console.log('Fetching dashboard data...');
+      
+      const [profileResponse, statsResponse] = await Promise.all([
+        axios.get(`${API_BASE_URL}/api/student/profile`, config),
+        axios.get(`${API_BASE_URL}/api/student/dashboard-stats`, config)
+      ]);
+
+      if (profileResponse.data.success) {
+        setUserData(profileResponse.data.data);
       } else {
         setError('Failed to fetch user data');
       }
+
+      if (statsResponse.data.success) {
+        setDashboardStats(statsResponse.data.data);
+        setCourseProgress(statsResponse.data.data.courseProgress);
+      }
+
     } catch (err) {
-      console.error('Error fetching user data:', err);
-      setError(err.response?.data?.message || 'Failed to load dashboard data');
+      console.error('Error fetching dashboard data:', err);
+      if (err.response?.status === 401) {
+        localStorage.removeItem('studentToken');
+        localStorage.removeItem('studentData');
+        navigate('/user/login', { replace: true });
+      } else {
+        setError(err.response?.data?.message || 'Failed to load dashboard data');
+      }
     } finally {
       setLoading(false);
     }
+  };
+
+  // Main useEffect for authentication and data fetching
+  useEffect(() => {
+    const token = localStorage.getItem('studentToken');
+    console.log('Dashboard mounted, checking token:', !!token);
+    
+    if (!token) {
+      console.log('No token found, redirecting to login');
+      navigate('/user/login', { replace: true });
+      return;
+    }
+    
+    fetchDashboardData();
+    
+    if (location.hash) {
+      setTimeout(() => {
+        scrollToSection(location.hash.substring(1));
+      }, 500);
+    }
+  }, [navigate]);
+
+  // Smooth scroll to section
+  const scrollToSection = (sectionName) => {
+    setActiveSection(sectionName);
+    
+    let sectionRef;
+    switch(sectionName) {
+      case 'dashboard':
+        sectionRef = dashboardRef;
+        break;
+      case 'profile':
+        sectionRef = personalInfoRef;
+        break;
+      case 'courses':
+        sectionRef = courseInfoRef;
+        break;
+      case 'progress':
+        sectionRef = courseProgressRef;
+        break;
+      case 'activity':
+        sectionRef = recentActivityRef;
+        break;
+      default:
+        sectionRef = dashboardRef;
+    }
+    
+    if (sectionRef && sectionRef.current) {
+      const yOffset = -80;
+      const y = sectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+    
+    window.history.pushState(null, '', `#${sectionName}`);
+    
+    if (isMobile && mobileOpen) {
+      setMobileOpen(false);
+    }
+  };
+
+  const handleRefresh = () => {
+    fetchDashboardData();
+    setSnackbar({ open: true, message: 'Data refreshed successfully!', severity: 'success' });
   };
 
   const handleDrawerToggle = () => {
@@ -110,69 +202,177 @@ const StudentDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('studentToken');
-    localStorage.removeItem('studentData');
-    navigate('/student/login');
+    localStorage.clear();
+    navigate('/user/login', { replace: true });
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
+  // Enhanced menu items with better icons
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/student/dashboard' },
-    { text: 'My Profile', icon: <PersonIcon />, path: '/student/profile' },
-    { text: 'My Courses', icon: <SchoolIcon />, path: '/student/courses' },
-    { text: 'Assignments', icon: <AssignmentIcon />, path: '/student/assignments' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/student/settings' },
+    { text: 'Dashboard', icon: <SpaceDashboardIcon />, section: 'dashboard' },
+    { text: 'My Profile', icon: <PersonIcon />, section: 'profile' },
+    { text: 'My Courses', icon: <BookIcon />, section: 'courses' },
+    { text: 'Course Progress', icon: <TimelineIcon />, section: 'progress' },
+    { text: 'Recent Activity', icon: <HistoryIcon />, section: 'activity' },
   ];
 
   const drawer = (
-    <Box>
-      <Box sx={{ p: 3, textAlign: 'center', bgcolor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Profile Section with increased padding */}
+      <Box sx={{ 
+        p: 4, 
+        textAlign: 'center', 
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        mb: 2
+      }}>
         <Avatar
           sx={{
-            width: 80,
-            height: 80,
+            width: 90,
+            height: 90,
             mx: 'auto',
             mb: 2,
             bgcolor: '#ff6b6b',
-            fontSize: 32
+            fontSize: 36,
+            border: '3px solid white'
           }}
         >
           {userData?.name?.charAt(0) || 'S'}
         </Avatar>
-        <Typography variant="h6" noWrap>
+        <Typography variant="h6" noWrap sx={{ color: 'white', fontWeight: 'bold' }}>
           {userData?.name || 'Student'}
         </Typography>
-        <Typography variant="body2" color="textSecondary">
-          Registration ID: {userData?.registrationId || 'N/A'}
+        <Typography
+  variant="body2"
+  sx={{
+    color: 'rgba(255,255,255,0.9)',
+    mt: 0.5,
+    fontSize: '10px',
+  }}
+>
+          {userData?.email || 'student@example.com'}
         </Typography>
+        <Chip 
+          label={userData?.status || 'Active'} 
+          size="small" 
+          sx={{ 
+            mt: 1.5, 
+            bgcolor: 'rgba(255,255,255,0.2)', 
+            color: 'white',
+            fontWeight: 'bold'
+          }}
+        />
       </Box>
-      <Divider />
-      <List>
+      
+      <Divider sx={{ mb: 2 }} />
+      
+      {/* Menu Items with increased height and padding */}
+      <List sx={{ flex: 1, px: 1 }}>
         {menuItems.map((item) => (
-          <ListItem
-            button
-            key={item.text}
-            onClick={() => navigate(item.path)}
-            sx={{
-              '&:hover': {
-                bgcolor: '#ff6b6b20'
-              }
-            }}
+          <ListItem 
+            key={item.text} 
+            disablePadding
+            sx={{ mb: 1 }}
           >
-            <ListItemIcon sx={{ color: '#ff6b6b' }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText primary={item.text} />
+            <ListItemButton
+              onClick={() => scrollToSection(item.section)}
+              sx={{
+                py: 2, // Increased vertical padding
+                px: 3.5,   // Increased horizontal padding
+                borderRadius: 2,
+                backgroundColor: activeSection === item.section ? '#ff6b6b15' : 'transparent',
+                '&:hover': {
+                  backgroundColor: '#ff6b6b10',
+                },
+                borderLeft: activeSection === item.section ? '4px solid #ff6b6b' : '4px solid transparent',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <ListItemIcon 
+                sx={{ 
+                  color: activeSection === item.section ? '#ff6b6b' : '#666',
+                  minWidth: 45,
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText 
+                primary={item.text} 
+                primaryTypographyProps={{
+                  fontSize: '1rem',
+                  fontWeight: activeSection === item.section ? 'bold' : 'medium',
+                  color: activeSection === item.section ? '#ff6b6b' : '#333',
+                }}
+              />
+            </ListItemButton>
           </ListItem>
         ))}
-        <ListItem button onClick={handleLogout}>
-          <ListItemIcon sx={{ color: '#f44336' }}>
-            <LogoutIcon />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
+      </List>
+      
+      <Divider sx={{ my: 2 }} />
+      
+      {/* Logout Button with increased padding */}
+      <List sx={{ px: 1, mb: 2 }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={handleLogout}
+            sx={{
+              py: 2,
+              px: 3.6,
+              borderRadius: 2,
+              backgroundColor: '#f4433610',
+              '&:hover': {
+                backgroundColor: '#f4433620',
+              },
+            }}
+          >
+            <ListItemIcon sx={{ color: '#f44336', minWidth: 45 }}>
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Logout" 
+              primaryTypographyProps={{
+                fontSize: '1rem',
+                fontWeight: 'bold',
+                color: '#f44336',
+              }}
+            />
+          </ListItemButton>
         </ListItem>
       </List>
     </Box>
   );
+
+  // Scroll spy
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = [
+        { id: 'dashboard', ref: dashboardRef },
+        { id: 'profile', ref: personalInfoRef },
+        { id: 'courses', ref: courseInfoRef },
+        { id: 'progress', ref: courseProgressRef },
+        { id: 'activity', ref: recentActivityRef }
+      ];
+      
+      for (const section of sections) {
+        if (section.ref && section.ref.current) {
+          const rect = section.ref.current.getBoundingClientRect();
+          if (rect.top <= 150 && rect.bottom >= 150) {
+            if (activeSection !== section.id) {
+              setActiveSection(section.id);
+              window.history.pushState(null, '', `#${section.id}`);
+            }
+            break;
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeSection]);
 
   if (loading) {
     return (
@@ -185,13 +385,13 @@ const StudentDashboard = () => {
   if (error) {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="error" sx={{ borderRadius: 2 }}>
+        <Alert severity="error" sx={{ borderRadius: 2, mb: 2 }}>
           {error}
         </Alert>
         <Button
           variant="contained"
-          onClick={() => navigate('/student/login')}
-          sx={{ mt: 2 }}
+          onClick={() => navigate('/user/login', { replace: true })}
+          sx={{ bgcolor: '#ff6b6b', '&:hover': { bgcolor: '#ff5252' } }}
         >
           Go to Login
         </Button>
@@ -206,10 +406,11 @@ const StudentDashboard = () => {
         position="fixed"
         sx={{
           display: { xs: 'block', md: 'none' },
-          background: 'linear-gradient(135deg, #ff6b6b, #ff8e8e)'
+          background: 'linear-gradient(135deg, #ff6b6b, #ff8e8e)',
+          zIndex: 1200
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: 64 }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -219,13 +420,16 @@ const StudentDashboard = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
             Student Dashboard
           </Typography>
+          <IconButton color="inherit" onClick={handleRefresh}>
+            <RefreshIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar Drawer */}
+      {/* Sidebar Drawer - Increased width */}
       <Drawer
         variant={isMobile ? 'temporary' : 'permanent'}
         open={isMobile ? mobileOpen : true}
@@ -234,9 +438,11 @@ const StudentDashboard = () => {
           width: 280,
           flexShrink: 0,
           [`& .MuiDrawer-paper`]: {
-            width: 280,
+            width: 240,
             boxSizing: 'border-box',
-            bgcolor: '#ffffff'
+            bgcolor: '#ffffff',
+            position: isMobile ? 'fixed' : 'relative',
+            borderRight: '1px solid #e0e0e0',
           }
         }}
       >
@@ -250,27 +456,49 @@ const StudentDashboard = () => {
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
           mt: { xs: 7, md: 0 },
-          overflow: 'auto'
+          overflow: 'auto',
+          width: { xs: '100%', md: `calc(100% - 280px)` }
         }}
       >
-        {/* Welcome Section */}
-        <Paper
-          sx={{
-            p: 3,
-            mb: 3,
-            background: 'linear-gradient(135deg, #ff6b6b20, #ff8e8e20)',
-            borderRadius: 3
-          }}
-        >
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
-            Welcome back, {userData?.name?.split(' ')[0]}! 👋
-          </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Track your learning progress and manage your courses from here.
-          </Typography>
-        </Paper>
+        {/* Header with Refresh Button for Desktop */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+          <Button
+            variant="outlined"
+            onClick={handleRefresh}
+            startIcon={<RefreshIcon />}
+            sx={{ 
+              display: { xs: 'none', md: 'flex' },
+              borderColor: '#ff6b6b',
+              color: '#ff6b6b',
+              px: 3,
+              py: 1,
+              '&:hover': { borderColor: '#ff5252', bgcolor: '#ff6b6b10' }
+            }}
+          >
+            Refresh Data
+          </Button>
+        </Box>
 
-        {/* Stats Cards */}
+        {/* Welcome Section */}
+        <div ref={dashboardRef}>
+          <Paper
+            sx={{
+              p: 4,
+              mb: 4,
+              background: 'linear-gradient(135deg, #ff6b6b20, #ff8e8e20)',
+              borderRadius: 3
+            }}
+          >
+            <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
+              Welcome back, {userData?.name?.split(' ')[0] || 'Student'}! 👋
+            </Typography>
+            <Typography variant="body1" color="textSecondary">
+              Track your learning progress and manage your courses from here.
+            </Typography>
+          </Paper>
+        </div>
+
+        {/* Stats Cards - Rest of your existing code remains the same */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
@@ -340,7 +568,7 @@ const StudentDashboard = () => {
                       Achievement Points
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#9c27b0' }}>
-                      1,250
+                      {dashboardStats?.achievementPoints || 0}
                     </Typography>
                   </Box>
                   <EmojiEventsIcon sx={{ fontSize: 40, color: '#9c27b0', opacity: 0.7 }} />
@@ -350,227 +578,299 @@ const StudentDashboard = () => {
           </Grid>
         </Grid>
 
+        {/* Rest of your existing Grid sections remain exactly the same */}
         <Grid container spacing={3}>
           {/* Student Information Section */}
           <Grid item xs={12} md={6}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3, height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
-                  <PersonIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Personal Information
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <PersonIcon color="primary" />
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">Full Name</Typography>
-                        <Typography variant="body1" fontWeight="bold">{userData?.name || 'N/A'}</Typography>
+            <div ref={personalInfoRef}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3, height: '100%', scrollMarginTop: '80px' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
+                    <PersonIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Personal Information
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <PersonIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Full Name</Typography>
+                          <Typography variant="body1" fontWeight="bold">{userData?.name || 'N/A'}</Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </Grid>
+                    </Grid>
 
-                  <Grid item xs={12}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <EmailIcon color="primary" />
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">Email Address</Typography>
-                        <Typography variant="body1">{userData?.email || 'N/A'}</Typography>
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <PersonIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Father's Name</Typography>
+                          <Typography variant="body1">{userData?.fatherName || 'N/A'}</Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </Grid>
+                    </Grid>
 
-                  <Grid item xs={12}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <PhoneIcon color="primary" />
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">Contact Number</Typography>
-                        <Typography variant="body1">{userData?.contactNumber || 'N/A'}</Typography>
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <EmailIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Email Address</Typography>
+                          <Typography variant="body1">{userData?.email || 'N/A'}</Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </Grid>
+                    </Grid>
 
-                  <Grid item xs={12}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <DateRangeIcon color="primary" />
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">Date of Birth</Typography>
-                        <Typography variant="body1">
-                          {userData?.dateOfBirth ? new Date(userData.dateOfBirth).toLocaleDateString() : 'N/A'}
-                        </Typography>
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <PhoneIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Contact Number</Typography>
+                          <Typography variant="body1">{userData?.contactNumber || 'N/A'}</Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </Grid>
+                    </Grid>
 
-                  <Grid item xs={12}>
-                    <Box display="flex" alignItems="center" gap={2}>
-                      <LocationIcon color="primary" />
-                      <Box>
-                        <Typography variant="caption" color="textSecondary">Address</Typography>
-                        <Typography variant="body1">{userData?.presentAddress || 'N/A'}</Typography>
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <PhoneIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Alternative Number</Typography>
+                          <Typography variant="body1">{userData?.altContactNumber || 'N/A'}</Typography>
+                        </Box>
                       </Box>
-                    </Box>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <DateRangeIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Date of Birth</Typography>
+                          <Typography variant="body1">
+                            {userData?.dateOfBirth ? new Date(userData.dateOfBirth).toLocaleDateString() : 'N/A'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <LocationIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Present Address</Typography>
+                          <Typography variant="body1">{userData?.presentAddress || 'N/A'}</Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <LocationIcon sx={{ color: '#ff6b6b' }} />
+                        <Box>
+                          <Typography variant="caption" color="textSecondary">Permanent Address</Typography>
+                          <Typography variant="body1">{userData?.permanentAddress || 'N/A'}</Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
                   </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </Grid>
 
           {/* Course & Package Information */}
           <Grid item xs={12} md={6}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3, height: '100%' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
-                  <SchoolIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Course Information
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
+            <div ref={courseInfoRef}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3, height: '100%', scrollMarginTop: '80px' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
+                    <SchoolIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Course Information
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
 
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <Box sx={{ bgcolor: '#fff3cd', p: 2, borderRadius: 2 }}>
-                      <Typography variant="caption" color="textSecondary">Package Details</Typography>
-                      <Typography variant="h6" fontWeight="bold" color="#ff6b6b">
-                        {userData?.packageDetails || 'N/A'}
-                      </Typography>
-                    </Box>
-                  </Grid>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Box sx={{ bgcolor: '#fff3cd', p: 2, borderRadius: 2 }}>
+                        <Typography variant="caption" color="textSecondary">Package Details</Typography>
+                        <Typography variant="h6" fontWeight="bold" color="#ff6b6b">
+                          {userData?.packageDetails || 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
 
-                  <Grid item xs={6}>
-                    <Box>
-                      <Typography variant="caption" color="textSecondary">Package Value</Typography>
-                      <Typography variant="body1" fontWeight="bold">{userData?.packageValue || 'N/A'}</Typography>
-                    </Box>
-                  </Grid>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Package Value</Typography>
+                        <Typography variant="body1" fontWeight="bold">{userData?.packageValue || 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
 
-                  <Grid item xs={6}>
-                    <Box>
-                      <Typography variant="caption" color="textSecondary">Package Price</Typography>
-                      <Typography variant="body1" fontWeight="bold" color="#4caf50">
-                        {userData?.packagePrice || 'N/A'}
-                      </Typography>
-                    </Box>
-                  </Grid>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Package Price</Typography>
+                        <Typography variant="body1" fontWeight="bold" color="#4caf50">
+                          {userData?.packagePrice || 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
 
-                  <Grid item xs={6}>
-                    <Box>
-                      <Typography variant="caption" color="textSecondary">Duration</Typography>
-                      <Typography variant="body1">{userData?.packageDuration || 'N/A'}</Typography>
-                    </Box>
-                  </Grid>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Duration</Typography>
+                        <Typography variant="body1">{userData?.packageDuration || 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
 
-                  <Grid item xs={6}>
-                    <Box>
-                      <Typography variant="caption" color="textSecondary">Date of Joining</Typography>
-                      <Typography variant="body1">
-                        {userData?.dateOfJoin ? new Date(userData.dateOfJoin).toLocaleDateString() : 'N/A'}
-                      </Typography>
-                    </Box>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Aadhar Number</Typography>
+                        <Typography variant="body1">******{userData?.aadharNumber?.slice(-4) || 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Date of Joining</Typography>
+                        <Typography variant="body1">
+                          {userData?.dateOfJoin ? new Date(userData.dateOfJoin).toLocaleDateString() : 'N/A'}
+                        </Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Registration ID</Typography>
+                        <Typography variant="body1" fontWeight="bold">{userData?.registrationId || 'N/A'}</Typography>
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Account Status</Typography>
+                        <Chip 
+                          label={userData?.status || 'Pending'} 
+                          size="small"
+                          sx={{ 
+                            bgcolor: userData?.status === 'active' ? '#4caf50' : '#ff9800',
+                            color: 'white'
+                          }}
+                        />
+                      </Box>
+                    </Grid>
                   </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </Grid>
 
           {/* Course Progress Section */}
           <Grid item xs={12}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
-                  <TimelineIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                  Course Progress Tracker
-                </Typography>
-                <Divider sx={{ mb: 3 }} />
+            <div ref={courseProgressRef}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3, scrollMarginTop: '80px' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
+                    <TimelineIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                    Course Progress Tracker
+                  </Typography>
+                  <Divider sx={{ mb: 3 }} />
 
-                <Grid container spacing={3}>
-                  <Grid item xs={12} md={8}>
-                    <Box sx={{ mb: 3 }}>
-                      <Box display="flex" justifyContent="space-between" mb={1}>
-                        <Typography variant="body2" fontWeight="bold">Overall Progress</Typography>
-                        <Typography variant="body2" color="#ff6b6b" fontWeight="bold">{courseProgress.completed}%</Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={8}>
+                      <Box sx={{ mb: 3 }}>
+                        <Box display="flex" justifyContent="space-between" mb={1}>
+                          <Typography variant="body2" fontWeight="bold">Overall Progress</Typography>
+                          <Typography variant="body2" color="#ff6b6b" fontWeight="bold">{courseProgress.completed}%</Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={courseProgress.completed}
+                          sx={{ height: 10, borderRadius: 5, bgcolor: '#ffe0e0', '& .MuiLinearProgress-bar': { bgcolor: '#ff6b6b' } }}
+                        />
                       </Box>
-                      <LinearProgress
-                        variant="determinate"
-                        value={courseProgress.completed}
-                        sx={{ height: 10, borderRadius: 5, bgcolor: '#ffe0e0', '& .MuiLinearProgress-bar': { bgcolor: '#ff6b6b' } }}
-                      />
-                    </Box>
 
-                    <Box sx={{ mb: 3 }}>
-                      <Typography variant="body2" fontWeight="bold" gutterBottom>Current Module</Typography>
-                      <Chip
-                        label={courseProgress.currentModule}
-                        color="primary"
-                        sx={{ bgcolor: '#ff6b6b20', color: '#ff6b6b', fontWeight: 'bold' }}
-                      />
-                    </Box>
+                      <Box sx={{ mb: 3 }}>
+                        <Typography variant="body2" fontWeight="bold" gutterBottom>Current Module</Typography>
+                        <Chip
+                          label={courseProgress.currentModule || "Loading..."}
+                          sx={{ bgcolor: '#ff6b6b20', color: '#ff6b6b', fontWeight: 'bold' }}
+                        />
+                      </Box>
 
-                    <Box>
-                      <Typography variant="body2" fontWeight="bold" gutterBottom>Next Module</Typography>
-                      <Chip
-                        label={courseProgress.nextModule}
-                        variant="outlined"
-                        sx={{ borderColor: '#ff6b6b', color: '#ff6b6b' }}
-                      />
-                    </Box>
+                      <Box>
+                        <Typography variant="body2" fontWeight="bold" gutterBottom>Next Module</Typography>
+                        <Chip
+                          label={courseProgress.nextModule || "Loading..."}
+                          variant="outlined"
+                          sx={{ borderColor: '#ff6b6b', color: '#ff6b6b' }}
+                        />
+                      </Box>
+                    </Grid>
+
+                    <Grid item xs={12} md={4}>
+                      <Box sx={{ bgcolor: '#f5f5f5', p: 2, borderRadius: 2 }}>
+                        <Typography variant="body2" fontWeight="bold" gutterBottom>Quick Stats</Typography>
+                        <Box display="flex" justifyContent="space-between" mb={1}>
+                          <Typography variant="caption">Modules Completed:</Typography>
+                          <Typography variant="caption" fontWeight="bold">{courseProgress.completedModules}/{courseProgress.totalModules}</Typography>
+                        </Box>
+                        <Box display="flex" justifyContent="space-between" mb={1}>
+                          <Typography variant="caption">Assignments Done:</Typography>
+                          <Typography variant="caption" fontWeight="bold">{courseProgress.completedAssignments}/{courseProgress.assignments}</Typography>
+                        </Box>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="caption">Certificate Status:</Typography>
+                          <Typography variant="caption" fontWeight="bold" color="#4caf50">{dashboardStats?.certificateStatus || 'In Progress'}</Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
                   </Grid>
-
-                  <Grid item xs={12} md={4}>
-                    <Box sx={{ bgcolor: '#f5f5f5', p: 2, borderRadius: 2 }}>
-                      <Typography variant="body2" fontWeight="bold" gutterBottom>Quick Stats</Typography>
-                      <Box display="flex" justifyContent="space-between" mb={1}>
-                        <Typography variant="caption">Modules Completed:</Typography>
-                        <Typography variant="caption" fontWeight="bold">{courseProgress.completedModules}/{courseProgress.totalModules}</Typography>
-                      </Box>
-                      <Box display="flex" justifyContent="space-between" mb={1}>
-                        <Typography variant="caption">Assignments Done:</Typography>
-                        <Typography variant="caption" fontWeight="bold">{courseProgress.completedAssignments}/{courseProgress.assignments}</Typography>
-                      </Box>
-                      <Box display="flex" justifyContent="space-between">
-                        <Typography variant="caption">Certificate Status:</Typography>
-                        <Typography variant="caption" fontWeight="bold" color="#4caf50">In Progress</Typography>
-                      </Box>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           </Grid>
 
           {/* Recent Activity */}
           <Grid item xs={12}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
-                  Recent Activity
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {[
-                    { activity: 'Completed Module 1: Introduction to Beauty', date: '2024-01-15', type: 'module' },
-                    { activity: 'Submitted Assignment: Skin Care Basics', date: '2024-01-12', type: 'assignment' },
-                    { activity: 'Started Module 2: Skin Care Fundamentals', date: '2024-01-10', type: 'module' },
-                    { activity: 'Changed password successfully', date: '2024-01-08', type: 'security' }
-                  ].map((activity, index) => (
-                    <Box key={index} display="flex" justifyContent="space-between" alignItems="center" p={1} sx={{ '&:hover': { bgcolor: '#f5f5f5', borderRadius: 1 } }}>
-                      <Box display="flex" alignItems="center" gap={2}>
-                        {activity.type === 'module' && <SchoolIcon sx={{ color: '#ff6b6b' }} />}
-                        {activity.type === 'assignment' && <AssignmentIcon sx={{ color: '#ff9800' }} />}
-                        {activity.type === 'security' && <CheckCircleIcon sx={{ color: '#4caf50' }} />}
-                        <Typography variant="body2">{activity.activity}</Typography>
+            <div ref={recentActivityRef}>
+              <Card sx={{ borderRadius: 3, boxShadow: 3, scrollMarginTop: '80px' }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
+                    Recent Activity
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {dashboardStats?.recentActivities?.map((activity, index) => (
+                      <Box key={index} display="flex" justifyContent="space-between" alignItems="center" p={1} sx={{ '&:hover': { bgcolor: '#f5f5f5', borderRadius: 1 } }}>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          {activity.type === 'module' && <SchoolIcon sx={{ color: '#ff6b6b' }} />}
+                          {activity.type === 'assignment' && <AssignmentIcon sx={{ color: '#ff9800' }} />}
+                          {activity.type === 'security' && <CheckCircleIcon sx={{ color: '#4caf50' }} />}
+                          <Typography variant="body2">{activity.activity}</Typography>
+                        </Box>
+                        <Typography variant="caption" color="textSecondary">{activity.date}</Typography>
                       </Box>
-                      <Typography variant="caption" color="textSecondary">{activity.date}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </CardContent>
-            </Card>
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </div>
           </Grid>
         </Grid>
       </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
