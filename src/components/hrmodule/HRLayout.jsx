@@ -1,10 +1,9 @@
-// src/hr/HrLayout.jsx
-import React, { useState } from 'react';
+// src/hrmodule/HRLayout.jsx
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Drawer,
-  AppBar,
   Toolbar,
   Typography,
   IconButton,
@@ -18,19 +17,16 @@ import {
   ThemeProvider,
   createTheme,
   CssBaseline,
-  Divider,
-  Badge
+  Divider
 } from '@mui/material';
 import {
-  Menu as MenuIcon,
   Dashboard as DashboardIcon,
-  People as PeopleIcon,
   LockReset as LockResetIcon,
   Logout as LogoutIcon,
   ChevronLeft as ChevronLeftIcon,
-  Notifications as NotificationsIcon,
   BusinessCenter as BusinessCenterIcon
 } from '@mui/icons-material';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { getLoggedInUser } from '../../utils/auth';
 
 const drawerWidth = 188;
@@ -80,12 +76,6 @@ const theme = createTheme({
   }
 });
 
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/hr/dashboard' },
-  { text: 'HR Module', icon: <BusinessCenterIcon />, path: '/hr/module' },
-  { text: 'Change Password', icon: <LockResetIcon />, path: '/hr/change-password' }
-];
-
 const HRLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -93,19 +83,38 @@ const HRLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+
+  // Get user role from localStorage
+  const userRole = localStorage.getItem('userRole') || 'hr_manager';
+
+  // Check if user has access to approvals
+  const hasApprovalsAccess = ['super_admin', 'hr_manager', 'admin'].includes(userRole);
+
+  // Menu items for HR
+  const menuItems = [
+    { text: 'Dashboard', icon: <DashboardIcon />, path: '/hr/dashboard' },
+    { text: 'HR Module', icon: <BusinessCenterIcon />, path: '/hr/module' },
+  ];
+  
+  // Add Approvals item if user has access (renders within HR layout)
+  if (hasApprovalsAccess) {
+    menuItems.push({ text: 'Approvals', icon: <FactCheckIcon />, path: '/hr/approvals' });
+  }
+  
+  menuItems.push({ text: 'Change Password', icon: <LockResetIcon />, path: '/hr/change-password' });
 
   const getSelectedItem = () => {
     const path = location.pathname;
     if (path.includes('/dashboard')) return 'Dashboard';
     if (path.includes('/module')) return 'HR Module';
+    if (path.includes('/approvals')) return 'Approvals';
     if (path.includes('/change-password')) return 'Change Password';
     return 'Dashboard';
   };
 
   const [selectedItem, setSelectedItem] = useState(getSelectedItem());
 
-  React.useEffect(() => {
+  useEffect(() => {
     setSelectedItem(getSelectedItem());
   }, [location.pathname]);
 
@@ -116,7 +125,6 @@ const HRLayout = () => {
   };
 
   const handleLogout = () => {
-    console.log("Logout..........")
     localStorage.clear();
     navigate('/admin/login');
   };
@@ -125,7 +133,25 @@ const HRLayout = () => {
 
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-    
+      {/* Collapse Toggle Button */}
+      {!isMobile && (
+        <IconButton 
+          onClick={toggleDrawer} 
+          sx={{ 
+            position: 'absolute', 
+            right: -12, 
+            top: 20, 
+            zIndex: 1300, 
+            bgcolor: '#1e293b', 
+            width: 24, 
+            height: 24,
+            '&:hover': { bgcolor: '#334155' }
+          }}
+        >
+          <ChevronLeftIcon sx={{ fontSize: 16, transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.3s ease' }} />
+        </IconButton>
+      )}
+      
       {/* Logo Section */}
       <Box sx={{ 
         px: collapsed ? 1 : 2.5, 
@@ -227,8 +253,6 @@ const HRLayout = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      
-
         {/* Desktop Sidebar */}
         <Drawer
           variant="permanent"

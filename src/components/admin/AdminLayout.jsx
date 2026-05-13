@@ -1,4 +1,3 @@
-
 // src/admin/AdminLayout.jsx
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
@@ -13,6 +12,8 @@ import {
   Logout as LogoutIcon, ChevronLeft as ChevronLeftIcon, 
   Password as PasswordIcon, Dashboard as DashboardIcon
 } from '@mui/icons-material';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
+
 import { getLoggedInUser } from '../../utils/auth';
 
 const drawerWidth = 188;
@@ -28,15 +29,6 @@ const theme = createTheme({
   }
 });
 
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
-  { text: 'Student List', icon: <PeopleIcon />, path: '/admin/students' },
-  { text: 'Payment History', icon: <PaymentIcon />, path: '/admin/payments' },
-  { text: 'HR Module', icon: <BusinessCenterIcon />, path: '/admin/hr' },
-  { text: 'Create User', icon: <AdminPanelSettingsIcon />, path: '/admin/createuser' },
-  { text: 'Change Password', icon: <PasswordIcon />, path: '/admin/change-password' }
-];
-
 const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,16 +38,44 @@ const AdminLayout = () => {
   const [selectedItem, setSelectedItem] = useState('Dashboard');
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Get user role from localStorage
+  const userRole = localStorage.getItem('userRole') || 'admin';
+
+  // Check if user has access to approvals
+  const hasApprovalsAccess = ['super_admin', 'hr_manager', 'admin'].includes(userRole);
+
+  // Menu items for Admin
+  const getMenuItems = () => {
+    const items = [
+      { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
+      { text: 'Student List', icon: <PeopleIcon />, path: '/admin/students' },
+      { text: 'Payment History', icon: <PaymentIcon />, path: '/admin/payments' },
+      { text: 'HR Module', icon: <BusinessCenterIcon />, path: '/admin/hr' },
+      { text: 'Create User', icon: <AdminPanelSettingsIcon />, path: '/admin/createuser' },
+    ];
+    
+    // Add Approvals item if user has access (renders within Admin layout)
+    if (hasApprovalsAccess) {
+      items.push({ text: 'Approvals', icon: <FactCheckIcon />, path: '/admin/approvals' });
+    }
+    
+    items.push({ text: 'Change Password', icon: <PasswordIcon />, path: '/admin/change-password' });
+    
+    return items;
+  };
+
+  const dynamicMenuItems = getMenuItems();
+
   // Set selected item based on current path
   useEffect(() => {
     const currentPath = location.pathname;
-    const currentItem = menuItems.find(item => currentPath === item.path);
+    const currentItem = dynamicMenuItems.find(item => currentPath === item.path);
     if (currentItem) {
       setSelectedItem(currentItem.text);
     } else if (currentPath === '/admin') {
       setSelectedItem('Dashboard');
     }
-  }, [location.pathname]);
+  }, [location.pathname, dynamicMenuItems]);
 
   const handleNavigation = (text, path) => {
     setSelectedItem(text);
@@ -64,7 +84,6 @@ const AdminLayout = () => {
   };
 
   const handleLogout = () => {
-    console.log("Logout..........")
     localStorage.clear();
     navigate('/admin/login');
   };
@@ -110,7 +129,7 @@ const AdminLayout = () => {
         )}
       </Box>
       <List sx={{ flex: 1 }}>
-        {menuItems.map((item) => (
+        {dynamicMenuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton 
               onClick={() => handleNavigation(item.text, item.path)} 
@@ -164,8 +183,6 @@ const AdminLayout = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
- 
-        
         <Drawer 
           variant="permanent" 
           sx={{ 

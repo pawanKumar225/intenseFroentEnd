@@ -1,134 +1,177 @@
 // src/admin/AdminDashboard.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Grid,
-  Paper,
-  Typography,
   Box,
+  Grid,
   Card,
   CardContent,
-  Avatar,
-  LinearProgress,
-  Container
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import {
   People as PeopleIcon,
-  Payment as PaymentIcon,
-  BusinessCenter as BusinessIcon,
-  TrendingUp as TrendingUpIcon,
-  School as SchoolIcon,
-  AttachMoney as MoneyIcon
+  CheckCircle as ApprovedIcon,
+  Cancel as RejectedIcon,
+  Pending as PendingIcon
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { getLoggedInUser } from '../../utils/auth';
+import studentApprovalService from '../../services/studentApprovalService';
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const loginUser = getLoggedInUser();
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0
+  });
+  const [loading, setLoading] = useState(true);
+  const [recentStudents, setRecentStudents] = useState([]);
 
-  const stats = [
-    { title: 'Total Students', value: '156', icon: <PeopleIcon />, color: '#e91e63', change: '+12%', path: '/admin/students' },
-    { title: 'Total Revenue', value: '₹45,200', icon: <MoneyIcon />, color: '#4caf50', change: '+8%', path: '/admin/payments' },
-    { title: 'Active Courses', value: '8', icon: <SchoolIcon />, color: '#2196f3', change: '+2', path: '/admin/courses' },
-    { title: 'HR Staff', value: '24', icon: <BusinessIcon />, color: '#ff9800', change: '+3', path: '/admin/hr' },
-  ];
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    try {
+      const statsResponse = await studentApprovalService.getStudentStats();
+      if (statsResponse.success) {
+        setStats(statsResponse.data);
+      }
+
+      const allStudentsResponse = await studentApprovalService.getAllStudents();
+      if (allStudentsResponse.success) {
+        setRecentStudents(allStudentsResponse.data.slice(0, 5));
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const StatCard = ({ title, value, icon, color }) => (
+    <Card sx={{ height: '100%', background: `linear-gradient(135deg, ${color}20, ${color}10)`, borderLeft: `4px solid ${color}` }}>
+      <CardContent>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box>
+            <Typography color="textSecondary" variant="subtitle2" gutterBottom>
+              {title}
+            </Typography>
+            <Typography variant="h4" fontWeight="bold">
+              {value}
+            </Typography>
+          </Box>
+          <Box sx={{ color: color }}>
+            {icon}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, sm: 3, md: 4 } }}>
-      {/* Welcome Section */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: { xs: 2, sm: 3 }, 
-          mb: { xs: 3, sm: 4 }, 
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          borderRadius: 2
-        }}
-      >
-        <Typography variant="h4" gutterBottom fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' } }}>
-          Welcome back, {loginUser || 'Admin'}! 👋
-        </Typography>
-        <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-          Here's what's happening with your academy today.
-        </Typography>
-      </Paper>
+    <Box>
+      <Typography variant="h4" gutterBottom fontWeight="bold">
+        Admin Dashboard
+      </Typography>
+      <Typography variant="body2" color="textSecondary" sx={{ mb: 4 }}>
+        Welcome back to your admin panel
+      </Typography>
 
       {/* Stats Cards */}
-      <Grid container spacing={{ xs: 2, sm: 2.5, md: 3 }} sx={{ mb: { xs: 3, sm: 4 } }}>
-        {stats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
-            <Card 
-              sx={{ 
-                cursor: 'pointer',
-                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                height: '100%',
-                '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: 3
-                }
-              }}
-              onClick={() => navigate(stat.path)}
-            >
-              <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Typography color="textSecondary" gutterBottom variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="h4" component="div" fontWeight="bold" sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' } }}>
-                      {stat.value}
-                    </Typography>
-                    <Box display="flex" alignItems="center" mt={1}>
-                      <TrendingUpIcon sx={{ fontSize: 14, color: 'green', mr: 0.5 }} />
-                      <Typography variant="caption" color="green">
-                        {stat.change}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Avatar sx={{ bgcolor: stat.color, width: { xs: 40, sm: 50 }, height: { xs: 40, sm: 50 } }}>
-                    {stat.icon}
-                  </Avatar>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Recent Activity Section */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, height: '100%' }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-              Student Enrollment Overview
-            </Typography>
-            <Typography variant="body2" color="textSecondary" gutterBottom>
-              Monthly enrollment statistics
-            </Typography>
-            <Box sx={{ mt: 3 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="body2" color="textSecondary">
-                  This Month's Progress
-                </Typography>
-                <Typography variant="body2" fontWeight="bold">
-                  78%
-                </Typography>
-              </Box>
-              <LinearProgress 
-                variant="determinate" 
-                value={78} 
-                sx={{ height: 8, borderRadius: 4, mb: 2 }}
-              />
-              <Typography variant="caption" color="textSecondary">
-                +24 new students this month (12% increase)
-              </Typography>
-            </Box>
-          </Paper>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Total Students" 
+            value={stats.total} 
+            icon={<PeopleIcon sx={{ fontSize: 40 }} />}
+            color="#1976d2"
+          />
         </Grid>
-
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Pending Approvals" 
+            value={stats.pending} 
+            icon={<PendingIcon sx={{ fontSize: 40 }} />}
+            color="#ff9800"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Approved Students" 
+            value={stats.approved} 
+            icon={<ApprovedIcon sx={{ fontSize: 40 }} />}
+            color="#4caf50"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard 
+            title="Rejected Students" 
+            value={stats.rejected} 
+            icon={<RejectedIcon sx={{ fontSize: 40 }} />}
+            color="#f44336"
+          />
+        </Grid>
       </Grid>
-    </Container>
+
+      {/* Recent Registrations */}
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" gutterBottom fontWeight="bold">
+          Recent Student Registrations
+        </Typography>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Registration ID</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Email</TableCell>
+                <TableCell>Package</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Date</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {recentStudents.map((student) => (
+                <TableRow key={student._id}>
+                  <TableCell>{student.registrationId}</TableCell>
+                  <TableCell>{student.name}</TableCell>
+                  <TableCell>{student.email}</TableCell>
+                  <TableCell>{student.packageDetails}</TableCell>
+                  <TableCell>
+                    <Chip 
+                      label={student.status.toUpperCase()} 
+                      color={
+                        student.status === 'active' ? 'success' : 
+                        student.status === 'rejected' ? 'error' : 'warning'
+                      }
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>{new Date(student.createdAt).toLocaleDateString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+    </Box>
   );
 };
 

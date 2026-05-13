@@ -1,42 +1,40 @@
 // src/routes/adminRoutes.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
-import AdminLogin from "../admin/AdminLogin";
-import AdminLayout from "../admin/AdminLayout";
-import StudentList from "../admin/StudentList";
-import PaymentHistory from "../admin/PaymentHistory";
-import CreatUser from "../admin/CreateAdmin";
-import ChangePassword from "../admin/ChangePassword";
 import AdminDashboard from "../admin/AdminDashboard";
+import StudentApprovals from "../admin/StudentApprovals";
+import AdminProfile from "../admin/AdminProfile";
+import AdminLogin from "../admin/AdminLogin";
+import ChangePassword from "../admin/ChangePassword";
 import ProtectedRoute from "../../components/ProtectedRoute";
-import FirstTimePasswordChange from '../admin/FirstTimePasswordChange';
-import HRModule from "../hrmodule/HRModule";
+import AdminLayout from "../admin/AdminLayout";
 
-const AdminRoutes = () => {
+export default function AdminRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<AdminLogin />} />
-      <Route path="/first-time-password" element={<FirstTimePasswordChange />} />
+      {/* Public Admin Login - No layout needed */}
+      <Route path="login" element={<AdminLogin />} />
       
-      <Route 
-        path="/" 
+      {/* Protected Admin Routes with Layout */}
+      <Route
         element={
-          <ProtectedRoute allowedRoles={['super_admin', 'admin', 'hr_manager']}>
+          <ProtectedRoute allowedRoles={['super_admin', 'hr_manager', 'admin']}>
             <AdminLayout />
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="students" element={<StudentList />} />
-        <Route path="payments" element={<PaymentHistory />} />
-        <Route path="hr" element={<HRModule />} />
-        <Route path="createuser" element={<CreatUser />} />
+        <Route path="approvals" element={<StudentApprovals />} />
+        <Route path="students" element={<div>Student List Page</div>} />
+        <Route path="payments" element={<div>Payment History Page</div>} />
+        <Route path="hr" element={<div>HR Module Page</div>} />
+        <Route path="createuser" element={<div>Create User Page</div>} />
         <Route path="change-password" element={<ChangePassword />} />
+        <Route path="profile" element={<AdminProfile />} />
       </Route>
       
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      {/* Catch all redirect to login */}
+      <Route path="*" element={<Navigate to="login" replace />} />
     </Routes>
   );
-};
-
-export default AdminRoutes;
+}
