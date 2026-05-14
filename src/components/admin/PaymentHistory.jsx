@@ -1,5 +1,5 @@
 // src/admin/PaymentHistory.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -32,7 +32,10 @@ import {
   Container,
   useMediaQuery,
   useTheme,
-  alpha
+  alpha,
+  CircularProgress,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -43,28 +46,128 @@ import {
   AttachMoney as AttachMoneyIcon,
   CheckCircle as CheckCircleIcon,
   Pending as PendingIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 
-// Mock Data
-const initialPayments = [
-  { id: 1, student: 'Alice Johnson', amount: 500, date: '2025-01-15', status: 'Completed', method: 'Credit Card', transactionId: 'TXN001' },
-  { id: 2, student: 'Bob Smith', amount: 500, date: '2025-01-10', status: 'Pending', method: 'Bank Transfer', transactionId: 'TXN002' },
-  { id: 3, student: 'Charlie Brown', amount: 500, date: '2025-01-05', status: 'Failed', method: 'PayPal', transactionId: 'TXN003' },
-  { id: 4, student: 'Diana Prince', amount: 500, date: '2025-01-20', status: 'Completed', method: 'Credit Card', transactionId: 'TXN004' },
-  { id: 5, student: 'Ethan Hunt', amount: 500, date: '2025-02-01', status: 'Completed', method: 'Bank Transfer', transactionId: 'TXN005' },
-  { id: 6, student: 'Fiona Apple', amount: 500, date: '2025-02-05', status: 'Pending', method: 'Credit Card', transactionId: 'TXN006' },
-  { id: 7, student: 'George King', amount: 500, date: '2025-02-10', status: 'Failed', method: 'PayPal', transactionId: 'TXN007' },
-  { id: 8, student: 'Hannah Lee', amount: 500, date: '2025-02-15', status: 'Completed', method: 'Bank Transfer', transactionId: 'TXN008' },
-  { id: 9, student: 'Ian Wright', amount: 750, date: '2025-02-20', status: 'Completed', method: 'Credit Card', transactionId: 'TXN009' },
-  { id: 10, student: 'Julia Roberts', amount: 500, date: '2025-02-25', status: 'Pending', method: 'PayPal', transactionId: 'TXN010' },
-];
+// API Service for Payments
+const API_BASE_URL = 'http://localhost:5000/api';
+
+const getAuthToken = () => {
+  return localStorage.getItem('adminToken');
+};
+
+const paymentApiService = {
+  // Get all payments
+  getPayments: async () => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/admin/payments`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch payments');
+    const result = await response.json();
+    return result.data;
+  },
+
+  // Get payment by ID
+  getPaymentById: async (paymentId) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/admin/payments/${paymentId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch payment');
+    const result = await response.json();
+    return result.data;
+  },
+
+  // Create new payment
+  createPayment: async (paymentData) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/admin/payments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(paymentData),
+    });
+    if (!response.ok) throw new Error('Failed to create payment');
+    const result = await response.json();
+    return result.data;
+  },
+
+  // Update payment
+  updatePayment: async (paymentId, paymentData) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/admin/payments/${paymentId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(paymentData),
+    });
+    if (!response.ok) throw new Error('Failed to update payment');
+    const result = await response.json();
+    return result.data;
+  },
+
+  // Delete payment
+  deletePayment: async (paymentId) => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/admin/payments/${paymentId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to delete payment');
+    return response.json();
+  },
+
+  // Get payment statistics
+  getPaymentStats: async () => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/admin/payments/stats`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch payment stats');
+    const result = await response.json();
+    return result.data;
+  },
+
+  // Get students list for dropdown
+  getStudents: async () => {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/admin/all-students`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) throw new Error('Failed to fetch students');
+    const result = await response.json();
+    return result.data;
+  }
+};
 
 const PaymentHistory = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
-  const [payments, setPayments] = useState(initialPayments);
+  const [payments, setPayments] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [methodFilter, setMethodFilter] = useState('All');
@@ -73,36 +176,93 @@ const PaymentHistory = () => {
   const [page, setPage] = useState(1);
   const [openDialog, setOpenDialog] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
-  const [formData, setFormData] = useState({
-    student: '',
-    amount: '',
-    date: '',
-    status: '',
-    method: '',
-    transactionId: ''
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [stats, setStats] = useState({
+    totalRevenue: 0,
+    completedAmount: 0,
+    pendingAmount: 0,
+    successRate: 0
   });
+  const [formData, setFormData] = useState({
+    studentId: '',
+    studentName: '',
+    amount: '',
+    paymentDate: '',
+    status: 'pending',
+    paymentMethod: '',
+    transactionId: '',
+    remarks: ''
+  });
+  
   const rowsPerPage = 5;
 
-  const statusOptions = ['All', 'Completed', 'Pending', 'Failed'];
-  const methodOptions = ['All', 'Credit Card', 'Bank Transfer', 'PayPal'];
+  const statusOptions = ['All', 'completed', 'pending', 'failed'];
+  const methodOptions = ['All', 'Credit Card', 'Bank Transfer', 'PayPal', 'Cash', 'UPI'];
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchAllData();
+  }, []);
+
+  const fetchAllData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([
+        fetchPayments(),
+        fetchStudents(),
+        fetchPaymentStats()
+      ]);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setSnackbar({ open: true, message: 'Failed to load data', severity: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPayments = async () => {
+    try {
+      const data = await paymentApiService.getPayments();
+      setPayments(data);
+    } catch (error) {
+      console.error('Error fetching payments:', error);
+      throw error;
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const data = await paymentApiService.getStudents();
+      setStudents(data);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+      throw error;
+    }
+  };
+
+  const fetchPaymentStats = async () => {
+    try {
+      const data = await paymentApiService.getPaymentStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      // Don't throw, stats are not critical
+    }
+  };
 
   // Filter payments
   const filteredPayments = payments.filter(payment => {
-    const matchesSearch = payment.student.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = payment.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          payment.transactionId?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || payment.status === statusFilter;
-    const matchesMethod = methodFilter === 'All' || payment.method === methodFilter;
-    const matchesStartDate = !startDate || payment.date >= startDate;
-    const matchesEndDate = !endDate || payment.date <= endDate;
+    const matchesMethod = methodFilter === 'All' || payment.paymentMethod === methodFilter;
+    const matchesStartDate = !startDate || payment.paymentDate >= startDate;
+    const matchesEndDate = !endDate || payment.paymentDate <= endDate;
     return matchesSearch && matchesStatus && matchesMethod && matchesStartDate && matchesEndDate;
   });
 
   const paginatedPayments = filteredPayments.slice((page - 1) * rowsPerPage, page * rowsPerPage);
   const pageCount = Math.ceil(filteredPayments.length / rowsPerPage);
-
-  const totalAmount = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
-  const completedAmount = filteredPayments.filter(p => p.status === 'Completed').reduce((sum, p) => sum + p.amount, 0);
-  const pendingAmount = filteredPayments.filter(p => p.status === 'Pending').reduce((sum, p) => sum + p.amount, 0);
-  const successRate = totalAmount > 0 ? Math.round((completedAmount / totalAmount) * 100) : 0;
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -115,31 +275,61 @@ const PaymentHistory = () => {
 
   const getStatusColor = (status) => {
     switch(status) {
-      case 'Completed': return 'success';
-      case 'Pending': return 'warning';
-      case 'Failed': return 'error';
+      case 'completed': return 'success';
+      case 'pending': return 'warning';
+      case 'failed': return 'error';
       default: return 'default';
     }
   };
 
-  const handleAddEdit = () => {
-    if (editingPayment) {
-      setPayments(payments.map(p => p.id === editingPayment.id ? { ...editingPayment, ...formData } : p));
-    } else {
-      const newId = Math.max(...payments.map(p => p.id), 0) + 1;
-      const newTransactionId = `TXN${String(newId).padStart(3, '0')}`;
-      setPayments([...payments, { 
-        id: newId, 
-        ...formData, 
-        transactionId: newTransactionId
-      }]);
+  const getStatusLabel = (status) => {
+    switch(status) {
+      case 'completed': return 'Completed';
+      case 'pending': return 'Pending';
+      case 'failed': return 'Failed';
+      default: return status;
     }
-    handleCloseDialog();
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this payment record?')) {
-      setPayments(payments.filter(p => p.id !== id));
+  const handleAddEdit = async () => {
+    try {
+      const paymentData = {
+        studentId: formData.studentId,
+        studentName: formData.studentName,
+        amount: parseFloat(formData.amount),
+        paymentDate: formData.paymentDate,
+        status: formData.status,
+        paymentMethod: formData.paymentMethod,
+        transactionId: formData.transactionId || `TXN${Date.now()}`,
+        remarks: formData.remarks
+      };
+
+      if (editingPayment) {
+        await paymentApiService.updatePayment(editingPayment._id, paymentData);
+        setSnackbar({ open: true, message: 'Payment updated successfully', severity: 'success' });
+      } else {
+        await paymentApiService.createPayment(paymentData);
+        setSnackbar({ open: true, message: 'Payment added successfully', severity: 'success' });
+      }
+      
+      handleCloseDialog();
+      await fetchAllData();
+    } catch (error) {
+      console.error('Error saving payment:', error);
+      setSnackbar({ open: true, message: error.message || 'Failed to save payment', severity: 'error' });
+    }
+  };
+
+  const handleDelete = async (payment) => {
+    if (window.confirm(`Are you sure you want to delete payment record for ${payment.studentName}?`)) {
+      try {
+        await paymentApiService.deletePayment(payment._id);
+        setSnackbar({ open: true, message: 'Payment deleted successfully', severity: 'success' });
+        await fetchAllData();
+      } catch (error) {
+        console.error('Error deleting payment:', error);
+        setSnackbar({ open: true, message: 'Failed to delete payment', severity: 'error' });
+      }
     }
   };
 
@@ -147,44 +337,69 @@ const PaymentHistory = () => {
     if (payment) {
       setEditingPayment(payment);
       setFormData({
-        student: payment.student,
+        studentId: payment.studentId,
+        studentName: payment.studentName,
         amount: payment.amount,
-        date: payment.date,
+        paymentDate: payment.paymentDate?.split('T')[0] || new Date().toISOString().split('T')[0],
         status: payment.status,
-        method: payment.method,
-        transactionId: payment.transactionId
+        paymentMethod: payment.paymentMethod,
+        transactionId: payment.transactionId,
+        remarks: payment.remarks || ''
       });
     } else {
       setEditingPayment(null);
       setFormData({
-        student: '',
+        studentId: '',
+        studentName: '',
         amount: '',
-        date: new Date().toISOString().split('T')[0],
-        status: 'Pending',
-        method: 'Credit Card',
-        transactionId: ''
+        paymentDate: new Date().toISOString().split('T')[0],
+        status: 'pending',
+        paymentMethod: '',
+        transactionId: '',
+        remarks: ''
       });
     }
     setOpenDialog(true);
   };
 
+  const handleStudentSelect = (studentId) => {
+    const selectedStudent = students.find(s => s._id === studentId);
+    if (selectedStudent) {
+      setFormData({
+        ...formData,
+        studentId: selectedStudent._id,
+        studentName: selectedStudent.name
+      });
+    }
+  };
+
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setEditingPayment(null);
+    setFormData({
+      studentId: '',
+      studentName: '',
+      amount: '',
+      paymentDate: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      paymentMethod: '',
+      transactionId: '',
+      remarks: ''
+    });
   };
 
   // Mobile Card View
   const MobileCardView = () => (
     <Stack spacing={2}>
       {paginatedPayments.map((payment) => (
-        <Card key={payment.id} sx={{ borderRadius: 3 }}>
+        <Card key={payment._id} sx={{ borderRadius: 3 }}>
           <CardContent sx={{ p: 2 }}>
             <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
               <Box>
-                <Typography variant="subtitle1" fontWeight={600}>{payment.student}</Typography>
+                <Typography variant="subtitle1" fontWeight={600}>{payment.studentName}</Typography>
                 <Typography variant="caption" color="textSecondary">{payment.transactionId}</Typography>
               </Box>
-              <Chip label={payment.status} color={getStatusColor(payment.status)} size="small" />
+              <Chip label={getStatusLabel(payment.status)} color={getStatusColor(payment.status)} size="small" />
             </Box>
             
             <Grid container spacing={1.5}>
@@ -194,11 +409,11 @@ const PaymentHistory = () => {
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="caption" color="textSecondary">Date</Typography>
-                <Typography variant="body2">{payment.date}</Typography>
+                <Typography variant="body2">{new Date(payment.paymentDate).toLocaleDateString()}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="caption" color="textSecondary">Method</Typography>
-                <Typography variant="body2">{payment.method}</Typography>
+                <Typography variant="body2">{payment.paymentMethod}</Typography>
               </Grid>
             </Grid>
             
@@ -206,7 +421,7 @@ const PaymentHistory = () => {
               <IconButton size="small" onClick={() => handleOpenDialog(payment)} color="primary">
                 <EditIcon fontSize="small" />
               </IconButton>
-              <IconButton size="small" onClick={() => handleDelete(payment.id)} color="error">
+              <IconButton size="small" onClick={() => handleDelete(payment)} color="error">
                 <DeleteIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -234,22 +449,22 @@ const PaymentHistory = () => {
         <TableBody>
           {paginatedPayments.length > 0 ? (
             paginatedPayments.map((payment) => (
-              <TableRow key={payment.id} hover>
-                <TableCell sx={{ fontWeight: 500 }}>{payment.student}</TableCell>
+              <TableRow key={payment._id} hover>
+                <TableCell sx={{ fontWeight: 500 }}>{payment.studentName}</TableCell>
                 <TableCell sx={{ fontWeight: 600, color: '#1976d2' }}>${payment.amount}</TableCell>
-                <TableCell>{payment.date}</TableCell>
-                <TableCell>{payment.method}</TableCell>
+                <TableCell>{new Date(payment.paymentDate).toLocaleDateString()}</TableCell>
+                <TableCell>{payment.paymentMethod}</TableCell>
                 <TableCell>
                   <Typography variant="caption" fontFamily="monospace">{payment.transactionId}</Typography>
                 </TableCell>
                 <TableCell>
-                  <Chip label={payment.status} color={getStatusColor(payment.status)} size="small" />
+                  <Chip label={getStatusLabel(payment.status)} color={getStatusColor(payment.status)} size="small" />
                 </TableCell>
                 <TableCell>
                   <IconButton size="small" onClick={() => handleOpenDialog(payment)} color="primary">
                     <EditIcon fontSize="small" />
                   </IconButton>
-                  <IconButton size="small" onClick={() => handleDelete(payment.id)} color="error">
+                  <IconButton size="small" onClick={() => handleDelete(payment)} color="error">
                     <DeleteIcon fontSize="small" />
                   </IconButton>
                 </TableCell>
@@ -268,6 +483,14 @@ const PaymentHistory = () => {
       </Table>
     </TableContainer>
   );
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, sm: 3, md: 4 } }}>
@@ -293,14 +516,23 @@ const PaymentHistory = () => {
             Track and manage all financial transactions
           </Typography>
         </Box>
-        <Button 
-          variant="contained" 
-          startIcon={<AddIcon />} 
-          onClick={() => handleOpenDialog()} 
-          sx={{ bgcolor: '#e91e63', '&:hover': { bgcolor: '#c2185b' } }}
-        >
-          Add Payment
-        </Button>
+        <Box display="flex" gap={2}>
+          <Button 
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={fetchAllData}
+          >
+            Refresh
+          </Button>
+          <Button 
+            variant="contained" 
+            startIcon={<AddIcon />} 
+            onClick={() => handleOpenDialog()} 
+            sx={{ bgcolor: '#e91e63', '&:hover': { bgcolor: '#c2185b' } }}
+          >
+            Add Payment
+          </Button>
+        </Box>
       </Box>
 
       {/* Statistics Cards */}
@@ -314,7 +546,7 @@ const PaymentHistory = () => {
                     Total Revenue
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
-                    ${totalAmount}
+                    ${stats.totalRevenue || 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: alpha('#1976d2', 0.1), color: '#1976d2' }}>
@@ -333,7 +565,7 @@ const PaymentHistory = () => {
                     Completed
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: '#10b981', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
-                    ${completedAmount}
+                    ${stats.completedAmount || 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: alpha('#10b981', 0.1), color: '#10b981' }}>
@@ -352,7 +584,7 @@ const PaymentHistory = () => {
                     Pending
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 700, color: '#f59e0b', fontSize: { xs: '1.25rem', sm: '2rem' } }}>
-                    ${pendingAmount}
+                    ${stats.pendingAmount || 0}
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: alpha('#f59e0b', 0.1), color: '#f59e0b' }}>
@@ -371,7 +603,7 @@ const PaymentHistory = () => {
                     Success Rate
                   </Typography>
                   <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', sm: '2rem' } }}>
-                    {successRate}%
+                    {stats.successRate || 0}%
                   </Typography>
                 </Box>
                 <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', color: 'white' }}>
@@ -388,7 +620,7 @@ const PaymentHistory = () => {
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'center' }} flexWrap="wrap">
           <TextField
             size="small"
-            placeholder="Search by student name..."
+            placeholder="Search by student name or transaction ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             sx={{ flex: 1, minWidth: { xs: '100%', sm: 200 } }}
@@ -405,7 +637,7 @@ const PaymentHistory = () => {
             <InputLabel>Status</InputLabel>
             <Select value={statusFilter} label="Status" onChange={(e) => setStatusFilter(e.target.value)}>
               {statusOptions.map(option => (
-                <MenuItem key={option} value={option}>{option}</MenuItem>
+                <MenuItem key={option} value={option}>{getStatusLabel(option)}</MenuItem>
               ))}
             </Select>
           </FormControl>
@@ -474,33 +706,53 @@ const PaymentHistory = () => {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 2 }}>
-            <TextField 
-              label="Student Name" 
-              fullWidth 
-              value={formData.student} 
-              onChange={(e) => setFormData({ ...formData, student: e.target.value })}
-              required
-            />
+            <FormControl fullWidth required>
+              <InputLabel>Select Student</InputLabel>
+              <Select 
+                value={formData.studentId} 
+                label="Select Student" 
+                onChange={(e) => handleStudentSelect(e.target.value)}
+                disabled={editingPayment}
+              >
+                {students.map(student => (
+                  <MenuItem key={student._id} value={student._id}>
+                    {student.name} ({student.registrationId})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            {formData.studentName && (
+              <TextField 
+                label="Student Name" 
+                fullWidth 
+                value={formData.studentName} 
+                disabled
+              />
+            )}
+            
             <TextField 
               label="Amount" 
               type="number"
               fullWidth 
               value={formData.amount} 
-              onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) })}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
               required
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
             />
+            
             <TextField 
-              label="Date" 
+              label="Payment Date" 
               type="date"
               fullWidth 
-              value={formData.date} 
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              value={formData.paymentDate} 
+              onChange={(e) => setFormData({ ...formData, paymentDate: e.target.value })}
               required
               InputLabelProps={{ shrink: true }}
             />
+            
             <FormControl fullWidth required>
               <InputLabel>Status</InputLabel>
               <Select 
@@ -508,23 +760,44 @@ const PaymentHistory = () => {
                 label="Status" 
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               >
-                <MenuItem value="Completed">Completed</MenuItem>
-                <MenuItem value="Pending">Pending</MenuItem>
-                <MenuItem value="Failed">Failed</MenuItem>
+                <MenuItem value="completed">Completed</MenuItem>
+                <MenuItem value="pending">Pending</MenuItem>
+                <MenuItem value="failed">Failed</MenuItem>
               </Select>
             </FormControl>
+            
             <FormControl fullWidth required>
               <InputLabel>Payment Method</InputLabel>
               <Select 
-                value={formData.method} 
+                value={formData.paymentMethod} 
                 label="Payment Method" 
-                onChange={(e) => setFormData({ ...formData, method: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
               >
                 <MenuItem value="Credit Card">Credit Card</MenuItem>
                 <MenuItem value="Bank Transfer">Bank Transfer</MenuItem>
                 <MenuItem value="PayPal">PayPal</MenuItem>
+                <MenuItem value="Cash">Cash</MenuItem>
+                <MenuItem value="UPI">UPI</MenuItem>
               </Select>
             </FormControl>
+            
+            <TextField 
+              label="Transaction ID" 
+              fullWidth 
+              value={formData.transactionId} 
+              onChange={(e) => setFormData({ ...formData, transactionId: e.target.value })}
+              placeholder="Optional - Auto-generated if left empty"
+            />
+            
+            <TextField 
+              label="Remarks" 
+              fullWidth 
+              multiline
+              rows={2}
+              value={formData.remarks} 
+              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+              placeholder="Optional remarks"
+            />
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2, bgcolor: '#f8fafc' }}>
@@ -534,6 +807,22 @@ const PaymentHistory = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

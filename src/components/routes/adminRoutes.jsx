@@ -7,6 +7,8 @@ import AdminLogin from "../admin/AdminLogin";
 import ChangePassword from "../admin/ChangePassword";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import AdminLayout from "../admin/AdminLayout";
+import StudentList from '../admin/StudentList';
+import PaymentHistory from '../admin/PaymentHistory';
 
 export default function AdminRoutes() {
   return (
@@ -25,8 +27,8 @@ export default function AdminRoutes() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="approvals" element={<StudentApprovals />} />
-        <Route path="students" element={<div>Student List Page</div>} />
-        <Route path="payments" element={<div>Payment History Page</div>} />
+        <Route path="students" element={<StudentList />} />
+        <Route path="payments" element={<PaymentHistory />} />
         <Route path="hr" element={<div>HR Module Page</div>} />
         <Route path="createuser" element={<div>Create User Page</div>} />
         <Route path="change-password" element={<ChangePassword />} />
