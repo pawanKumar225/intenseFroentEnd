@@ -135,7 +135,7 @@ const paymentApiService = {
   // Get payment statistics
   getPaymentStats: async () => {
     const token = getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/admin/payments/stats`, {
+    const response = await fetch(`${API_BASE_URL}/admin/payments/status`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -390,99 +390,105 @@ const PaymentHistory = () => {
 
   // Mobile Card View
   const MobileCardView = () => (
-    <Stack spacing={2}>
-      {paginatedPayments.map((payment) => (
-        <Card key={payment._id} sx={{ borderRadius: 3 }}>
-          <CardContent sx={{ p: 2 }}>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-              <Box>
-                <Typography variant="subtitle1" fontWeight={600}>{payment.studentName}</Typography>
-                <Typography variant="caption" color="textSecondary">{payment.transactionId}</Typography>
-              </Box>
-              <Chip label={getStatusLabel(payment.status)} color={getStatusColor(payment.status)} size="small" />
+  <Stack spacing={2}>
+    {paginatedPayments.map((payment) => (
+      <Card key={payment._id} sx={{ borderRadius: 3 }}>
+        <CardContent sx={{ p: 2 }}>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={600}>{payment.studentName}</Typography>
+              <Typography variant="caption" color="textSecondary">{payment.transactionId}</Typography>
             </Box>
-            
-            <Grid container spacing={1.5}>
-              <Grid item xs={6}>
-                <Typography variant="caption" color="textSecondary">Amount</Typography>
-                <Typography variant="h6" fontWeight={700} color="#1976d2">${payment.amount}</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="caption" color="textSecondary">Date</Typography>
-                <Typography variant="body2">{new Date(payment.paymentDate).toLocaleDateString()}</Typography>
-              </Grid>
-              <Grid item xs={6}>
-                <Typography variant="caption" color="textSecondary">Method</Typography>
-                <Typography variant="body2">{payment.paymentMethod}</Typography>
-              </Grid>
+            <Chip label={getStatusLabel(payment.status)} color={getStatusColor(payment.status)} size="small" />
+          </Box>
+          
+          <Grid container spacing={1.5}>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="textSecondary">Paid Amount</Typography>
+              <Typography variant="h6" fontWeight={700} color="#1976d2">₹{payment.amount?.toLocaleString() || 0}</Typography>
             </Grid>
-            
-            <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
-              <IconButton size="small" onClick={() => handleOpenDialog(payment)} color="primary">
-                <EditIcon fontSize="small" />
-              </IconButton>
-              <IconButton size="small" onClick={() => handleDelete(payment)} color="error">
-                <DeleteIcon fontSize="small" />
-              </IconButton>
-            </Box>
-          </CardContent>
-        </Card>
-      ))}
-    </Stack>
-  );
+            <Grid item xs={6}>
+              <Typography variant="caption" color="textSecondary">Due Amount</Typography>
+              <Typography variant="h6" fontWeight={700} color="#f59e0b">₹{(payment.dueAmount || payment.remainingDue || 0).toLocaleString()}</Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="textSecondary">Date</Typography>
+              <Typography variant="body2">{new Date(payment.paymentDate).toLocaleDateString()}</Typography>
+            </Grid>
+            <Grid item xs={6}>
+              <Typography variant="caption" color="textSecondary">Method</Typography>
+              <Typography variant="body2">{payment.paymentMethod}</Typography>
+            </Grid>
+          </Grid>
+          
+          <Box display="flex" justifyContent="flex-end" gap={1} mt={2}>
+            <IconButton size="small" onClick={() => handleOpenDialog(payment)} color="primary">
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton size="small" onClick={() => handleDelete(payment)} color="error">
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </CardContent>
+      </Card>
+    ))}
+  </Stack>
+);
+
 
   // Desktop Table View
-  const DesktopTableView = () => (
-    <TableContainer component={Paper} sx={{ borderRadius: 3, overflowX: 'auto' }}>
-      <Table sx={{ minWidth: 800 }}>
-        <TableHead sx={{ backgroundColor: '#f8fafc' }}>
-          <TableRow>
-            <TableCell><strong>Student</strong></TableCell>
-            <TableCell><strong>Amount</strong></TableCell>
-            <TableCell><strong>Date</strong></TableCell>
-            <TableCell><strong>Method</strong></TableCell>
-            <TableCell><strong>Txn ID</strong></TableCell>
-            <TableCell><strong>Status</strong></TableCell>
-            <TableCell><strong>Actions</strong></TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {paginatedPayments.length > 0 ? (
-            paginatedPayments.map((payment) => (
-              <TableRow key={payment._id} hover>
-                <TableCell sx={{ fontWeight: 500 }}>{payment.studentName}</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: '#1976d2' }}>${payment.amount}</TableCell>
-                <TableCell>{new Date(payment.paymentDate).toLocaleDateString()}</TableCell>
-                <TableCell>{payment.paymentMethod}</TableCell>
-                <TableCell>
-                  <Typography variant="caption" fontFamily="monospace">{payment.transactionId}</Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip label={getStatusLabel(payment.status)} color={getStatusColor(payment.status)} size="small" />
-                </TableCell>
-                <TableCell>
-                  <IconButton size="small" onClick={() => handleOpenDialog(payment)} color="primary">
-                    <EditIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton size="small" onClick={() => handleDelete(payment)} color="error">
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                <Typography variant="body1" color="textSecondary">
-                  No payment records found
-                </Typography>
+ const DesktopTableView = () => (
+  <TableContainer component={Paper} sx={{ borderRadius: 3, overflowX: 'auto' }}>
+    <Table sx={{ minWidth: 800 }}>
+      <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+        <TableRow>
+          <TableCell><strong>Student</strong></TableCell>
+          <TableCell><strong>Paid Amount</strong></TableCell>
+          <TableCell><strong>Due Amount</strong></TableCell>
+          <TableCell><strong>Method</strong></TableCell>
+          <TableCell><strong>Txn ID</strong></TableCell>
+          <TableCell><strong>Status</strong></TableCell>
+          <TableCell><strong>Actions</strong></TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {paginatedPayments.length > 0 ? (
+          paginatedPayments.map((payment) => (
+            <TableRow key={payment._id} hover>
+              <TableCell sx={{ fontWeight: 500 }}>{payment.studentName}</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#1976d2' }}>₹{payment.amount?.toLocaleString() || 0}</TableCell>
+              <TableCell sx={{ fontWeight: 600, color: '#f59e0b' }}>₹{(payment.dueAmount || payment.remainingDue || 0).toLocaleString()}</TableCell>
+              <TableCell>{payment.paymentMethod}</TableCell>
+              <TableCell>
+                <Typography variant="caption" fontFamily="monospace">{payment.transactionId}</Typography>
+              </TableCell>
+              <TableCell>
+                <Chip label={getStatusLabel(payment.status)} color={getStatusColor(payment.status)} size="small" />
+              </TableCell>
+              <TableCell>
+                <IconButton size="small" onClick={() => handleOpenDialog(payment)} color="primary">
+                  <EditIcon fontSize="small" />
+                </IconButton>
+                <IconButton size="small" onClick={() => handleDelete(payment)} color="error">
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
               </TableCell>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+          ))
+        ) : (
+          <TableRow>
+            <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+              <Typography variant="body1" color="textSecondary">
+                No payment records found
+              </Typography>
+            </TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  </TableContainer>
+);
+
 
   if (loading) {
     return (

@@ -9,7 +9,8 @@ import ProtectedRoute from "../../components/ProtectedRoute";
 import AdminLayout from "../admin/AdminLayout";
 import StudentList from '../admin/StudentList';
 import PaymentHistory from '../admin/PaymentHistory';
-
+import CreateAdmin from '../admin/CreateAdmin';
+import HRModule from "../hrmodule/HRModule";
 export default function AdminRoutes() {
   return (
     <Routes>
@@ -29,8 +30,8 @@ export default function AdminRoutes() {
         <Route path="approvals" element={<StudentApprovals />} />
         <Route path="students" element={<StudentList />} />
         <Route path="payments" element={<PaymentHistory />} />
-        <Route path="hr" element={<div>HR Module Page</div>} />
-        <Route path="createuser" element={<div>Create User Page</div>} />
+        <Route path="hr" element={<HRModule />} />
+        <Route path="createuser" element={<CreateAdmin />} />
         <Route path="change-password" element={<ChangePassword />} />
         <Route path="profile" element={<AdminProfile />} />
       </Route>

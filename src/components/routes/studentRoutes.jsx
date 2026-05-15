@@ -1,7 +1,7 @@
 // src/routes/studentRoutes.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import UserLogin from "../user/userLogin";
-import UserRegister from "../user/UserRegistration";
+import UserRegister from "../user/Registration";
 import StudentFirstTimePasswordChange from '../user/FirstTimePasswordChange';
 import StudentDashboard from '../user/StudentDashboard';
 import ProtectedRoute from "../../components/ProtectedRoute";

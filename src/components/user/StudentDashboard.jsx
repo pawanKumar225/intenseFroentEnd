@@ -108,6 +108,7 @@ const StudentDashboard = () => {
         axios.get(`${API_BASE_URL}/api/student/profile`, config),
         axios.get(`${API_BASE_URL}/api/student/dashboard-stats`, config)
       ]);
+      console.log("profileResponse........",profileResponse)
 
       if (profileResponse.data.success) {
         setUserData(profileResponse.data.data);
@@ -253,6 +254,16 @@ const StudentDashboard = () => {
   }}
 >
           {userData?.email || 'student@example.com'}
+        </Typography>
+         <Typography
+  variant="body2"
+  sx={{
+    color: 'rgba(0,0,0)',
+    mt: 0.5,
+    fontSize: '15px',
+  }}
+>
+          {userData?.registrationId || ' '}
         </Typography>
         <Chip 
           label={userData?.status || 'Active'} 
@@ -500,28 +511,7 @@ const StudentDashboard = () => {
 
         {/* Stats Cards - Rest of your existing code remains the same */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography color="textSecondary" gutterBottom variant="caption">
-                      Course Progress
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
-                      {courseProgress.completed}%
-                    </Typography>
-                  </Box>
-                  <SchoolIcon sx={{ fontSize: 40, color: '#ff6b6b', opacity: 0.7 }} />
-                </Box>
-                <LinearProgress
-                  variant="determinate"
-                  value={courseProgress.completed}
-                  sx={{ mt: 2, height: 8, borderRadius: 4, bgcolor: '#ffe0e0', '& .MuiLinearProgress-bar': { bgcolor: '#ff6b6b' } }}
-                />
-              </CardContent>
-            </Card>
-          </Grid>
+          
 
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
@@ -576,6 +566,29 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
           </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
+              <CardContent>
+                <Box display="flex" alignItems="center" justifyContent="space-between">
+                  <Box>
+                    <Typography color="textSecondary" gutterBottom variant="caption">
+                      Payment Due
+                    </Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
+                      {userData?.dueAmount || 0}
+                    </Typography>
+                  </Box>
+                  <SchoolIcon sx={{ fontSize: 40, color: '#ff6b6b', opacity: 0.7 }} />
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={courseProgress.completed}
+                  sx={{ mt: 2, height: 8, borderRadius: 4, bgcolor: '#ffe0e0', '& .MuiLinearProgress-bar': { bgcolor: '#ff6b6b' } }}
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+         
         </Grid>
 
         {/* Rest of your existing Grid sections remain exactly the same */}
