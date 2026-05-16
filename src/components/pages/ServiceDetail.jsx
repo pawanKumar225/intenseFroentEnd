@@ -102,6 +102,7 @@ export default function ServiceDetail() {
             variant="contained" 
             size="large"
             sx={{ bgcolor: '#e91e63', '&:hover': { bgcolor: '#c2185b' } }}
+            onClick={() => navigate('/user/register')}
           >
             Enroll Now
           </Button>
