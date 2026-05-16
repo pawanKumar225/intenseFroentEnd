@@ -29,6 +29,10 @@ const UserLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+
+  React.useEffect(()=>{
+    localStorage.clear();
+  },[])
   // Check if already logged in
   React.useEffect(() => {
     const token = localStorage.getItem('studentToken');

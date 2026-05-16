@@ -38,12 +38,17 @@ export default function AdminLogin() {
 
   // Check if already logged in
   useEffect(() => {
-    const token = localStorage.getItem('token');
+   
+    localStorage.clear();
+  }, []);
+   // Check if already logged in
+    React.useEffect(() => {
+     const token = localStorage.getItem('token');
     const userRole = localStorage.getItem('userRole');
     if (token && userRole) {
       redirectBasedOnRole(userRole);
     }
-  }, []);
+    }, [navigate]);
 
   const redirectBasedOnRole = (role) => {
     switch(role) {
