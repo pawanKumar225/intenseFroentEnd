@@ -37,18 +37,18 @@ export default function AdminLogin() {
   const [connectionError, setConnectionError] = useState(false);
 
   // Check if already logged in
-  useEffect(() => {
-   
-    localStorage.clear();
-  }, []);
+  
    // Check if already logged in
-    React.useEffect(() => {
-     const token = localStorage.getItem('token');
-    const userRole = localStorage.getItem('userRole');
-    if (token && userRole) {
-      redirectBasedOnRole(userRole);
-    }
-    }, [navigate]);
+   // src/admin/AdminLogin.jsx - Fix the useEffect
+React.useEffect(() => {
+  // REMOVE THIS LINE: localStorage.clear();
+  
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
+  if (token && userRole) {
+    redirectBasedOnRole(userRole);
+  }
+}, [navigate]);
 
   const redirectBasedOnRole = (role) => {
     switch(role) {

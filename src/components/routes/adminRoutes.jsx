@@ -11,12 +11,15 @@ import StudentList from '../admin/StudentList';
 import PaymentHistory from '../admin/PaymentHistory';
 import CreateAdmin from '../admin/CreateAdmin';
 import HRModule from "../hrmodule/HRModule";
+import FirstTimePasswordChange from '../admin/AdminFirstTimePasswordChange';
+
 export default function AdminRoutes() {
   return (
     <Routes>
       {/* Public Admin Login - No layout needed */}
       <Route path="login" element={<AdminLogin />} />
-      
+      {/* First Time Password Change - Requires token but no layout */}
+      <Route path="first-time-password" element={<FirstTimePasswordChange />} />
       {/* Protected Admin Routes with Layout */}
       <Route
         element={
