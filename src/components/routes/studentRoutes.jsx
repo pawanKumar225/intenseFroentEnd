@@ -1,5 +1,6 @@
 // src/routes/studentRoutes.jsx
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from 'react';
 import UserLogin from "../user/userLogin";
 import UserRegister from "../user/Registration";
 import StudentFirstTimePasswordChange from '../user/FirstTimePasswordChange';
@@ -7,9 +8,19 @@ import StudentDashboard from '../user/StudentDashboard';
 import ProtectedRoute from "../../components/ProtectedRoute";
 
 const StudentRoutes = () => {
-  // Get token to check if user is logged in
-  const token = localStorage.getItem('studentToken');
-  const isAuthenticated = !!token;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check authentication status
+    const token = localStorage.getItem('studentToken');
+    setIsAuthenticated(!!token);
+    setLoading(false);
+  }, []);
+
+  if (loading) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <Routes>

@@ -1,4 +1,4 @@
-// src/components/student/StudentDashboard.jsx
+// src/user/StudentDashboard.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Container,
@@ -29,7 +29,6 @@ import {
   Snackbar
 } from '@mui/material';
 import {
-  Dashboard as DashboardIcon,
   Person as PersonIcon,
   School as SchoolIcon,
   Assignment as AssignmentIcon,
@@ -47,16 +46,13 @@ import {
   Book as BookIcon,
   History as HistoryIcon
 } from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:5000';
+import { useNavigate } from 'react-router-dom';
+import studentAxios from '../../config/studentAxios';
 
 const StudentDashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
-  const location = useLocation();
   
   // Refs for scrolling to sections
   const dashboardRef = useRef(null);
@@ -84,41 +80,37 @@ const StudentDashboard = () => {
     completedAssignments: 0
   });
 
-  // Fetch dashboard data function
+  // Fetch dashboard data
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('studentToken');
       
       if (!token) {
-        console.log('No token found in fetchDashboardData');
+        console.log('No token found');
         navigate('/user/login', { replace: true });
         return;
       }
 
-      const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      };
-
       console.log('Fetching dashboard data...');
       
-      const [profileResponse, statsResponse] = await Promise.all([
-        axios.get(`${API_BASE_URL}/api/student/profile`, config),
-        axios.get(`${API_BASE_URL}/api/student/dashboard-stats`, config)
-      ]);
-      console.log("profileResponse........",profileResponse)
-
+      // Fetch user profile
+      const profileResponse = await studentAxios.get('/api/student/profile');
+      
       if (profileResponse.data.success) {
         setUserData(profileResponse.data.data);
       } else {
         setError('Failed to fetch user data');
       }
 
+      // Fetch dashboard stats
+      const statsResponse = await studentAxios.get('/api/student/dashboard-stats');
+      
       if (statsResponse.data.success) {
         setDashboardStats(statsResponse.data.data);
-        setCourseProgress(statsResponse.data.data.courseProgress);
+        if (statsResponse.data.data.courseProgress) {
+          setCourseProgress(statsResponse.data.data.courseProgress);
+        }
       }
 
     } catch (err) {
@@ -126,6 +118,7 @@ const StudentDashboard = () => {
       if (err.response?.status === 401) {
         localStorage.removeItem('studentToken');
         localStorage.removeItem('studentData');
+        localStorage.removeItem('userRole');
         navigate('/user/login', { replace: true });
       } else {
         setError(err.response?.data?.message || 'Failed to load dashboard data');
@@ -135,25 +128,35 @@ const StudentDashboard = () => {
     }
   };
 
-  // Main useEffect for authentication and data fetching
+  // Check authentication on mount
   useEffect(() => {
     const token = localStorage.getItem('studentToken');
-    console.log('Dashboard mounted, checking token:', !!token);
     
     if (!token) {
-      console.log('No token found, redirecting to login');
       navigate('/user/login', { replace: true });
       return;
     }
     
     fetchDashboardData();
-    
-    if (location.hash) {
-      setTimeout(() => {
-        scrollToSection(location.hash.substring(1));
-      }, 500);
-    }
   }, [navigate]);
+
+  const handleRefresh = () => {
+    fetchDashboardData();
+    setSnackbar({ open: true, message: 'Data refreshed successfully!', severity: 'success' });
+  };
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/user/login', { replace: true });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
 
   // Smooth scroll to section
   const scrollToSection = (sectionName) => {
@@ -186,6 +189,7 @@ const StudentDashboard = () => {
       window.scrollTo({ top: y, behavior: 'smooth' });
     }
     
+    // Update URL hash without scrolling
     window.history.pushState(null, '', `#${sectionName}`);
     
     if (isMobile && mobileOpen) {
@@ -193,25 +197,45 @@ const StudentDashboard = () => {
     }
   };
 
-  const handleRefresh = () => {
-    fetchDashboardData();
-    setSnackbar({ open: true, message: 'Data refreshed successfully!', severity: 'success' });
-  };
+  // Scroll spy to update active section
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = [
+        { id: 'dashboard', ref: dashboardRef },
+        { id: 'profile', ref: personalInfoRef },
+        { id: 'courses', ref: courseInfoRef },
+        { id: 'progress', ref: courseProgressRef },
+        { id: 'activity', ref: recentActivityRef }
+      ];
+      
+      for (const section of sections) {
+        if (section.ref && section.ref.current) {
+          const rect = section.ref.current.getBoundingClientRect();
+          if (rect.top <= 150 && rect.bottom >= 150) {
+            if (activeSection !== section.id) {
+              setActiveSection(section.id);
+              window.history.pushState(null, '', `#${section.id}`);
+            }
+            break;
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeSection]);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  // Check URL hash on initial load
+  useEffect(() => {
+    if (window.location.hash) {
+      const section = window.location.hash.substring(1);
+      setTimeout(() => {
+        scrollToSection(section);
+      }, 500);
+    }
+  }, []);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate('/user/login', { replace: true });
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  // Enhanced menu items with better icons
   const menuItems = [
     { text: 'Dashboard', icon: <SpaceDashboardIcon />, section: 'dashboard' },
     { text: 'My Profile', icon: <PersonIcon />, section: 'profile' },
@@ -222,7 +246,7 @@ const StudentDashboard = () => {
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Profile Section with increased padding */}
+      {/* Profile Section */}
       <Box sx={{ 
         p: 4, 
         textAlign: 'center', 
@@ -245,25 +269,11 @@ const StudentDashboard = () => {
         <Typography variant="h6" noWrap sx={{ color: 'white', fontWeight: 'bold' }}>
           {userData?.name || 'Student'}
         </Typography>
-        <Typography
-  variant="body2"
-  sx={{
-    color: 'rgba(255,255,255,0.9)',
-    mt: 0.5,
-    fontSize: '10px',
-  }}
->
+        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.9)', mt: 0.5 }}>
           {userData?.email || 'student@example.com'}
         </Typography>
-         <Typography
-  variant="body2"
-  sx={{
-    color: 'rgba(0,0,0)',
-    mt: 0.5,
-    fontSize: '15px',
-  }}
->
-          {userData?.registrationId || ' '}
+        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 0.5, fontSize: '12px' }}>
+          ID: {userData?.registrationId || 'N/A'}
         </Typography>
         <Chip 
           label={userData?.status || 'Active'} 
@@ -279,19 +289,15 @@ const StudentDashboard = () => {
       
       <Divider sx={{ mb: 2 }} />
       
-      {/* Menu Items with increased height and padding */}
+      {/* Menu Items */}
       <List sx={{ flex: 1, px: 1 }}>
         {menuItems.map((item) => (
-          <ListItem 
-            key={item.text} 
-            disablePadding
-            sx={{ mb: 1 }}
-          >
+          <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
             <ListItemButton
               onClick={() => scrollToSection(item.section)}
               sx={{
-                py: 2, // Increased vertical padding
-                px: 3.5,   // Increased horizontal padding
+                py: 2,
+                px: 3.5,
                 borderRadius: 2,
                 backgroundColor: activeSection === item.section ? '#ff6b6b15' : 'transparent',
                 '&:hover': {
@@ -301,12 +307,7 @@ const StudentDashboard = () => {
                 transition: 'all 0.3s ease'
               }}
             >
-              <ListItemIcon 
-                sx={{ 
-                  color: activeSection === item.section ? '#ff6b6b' : '#666',
-                  minWidth: 45,
-                }}
-              >
+              <ListItemIcon sx={{ color: activeSection === item.section ? '#ff6b6b' : '#666', minWidth: 45 }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText 
@@ -324,7 +325,7 @@ const StudentDashboard = () => {
       
       <Divider sx={{ my: 2 }} />
       
-      {/* Logout Button with increased padding */}
+      {/* Logout Button */}
       <List sx={{ px: 1, mb: 2 }}>
         <ListItem disablePadding>
           <ListItemButton
@@ -356,35 +357,6 @@ const StudentDashboard = () => {
     </Box>
   );
 
-  // Scroll spy
-  useEffect(() => {
-    const handleScroll = () => {
-      const sections = [
-        { id: 'dashboard', ref: dashboardRef },
-        { id: 'profile', ref: personalInfoRef },
-        { id: 'courses', ref: courseInfoRef },
-        { id: 'progress', ref: courseProgressRef },
-        { id: 'activity', ref: recentActivityRef }
-      ];
-      
-      for (const section of sections) {
-        if (section.ref && section.ref.current) {
-          const rect = section.ref.current.getBoundingClientRect();
-          if (rect.top <= 150 && rect.bottom >= 150) {
-            if (activeSection !== section.id) {
-              setActiveSection(section.id);
-              window.history.pushState(null, '', `#${section.id}`);
-            }
-            break;
-          }
-        }
-      }
-    };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [activeSection]);
-
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
@@ -396,14 +368,8 @@ const StudentDashboard = () => {
   if (error) {
     return (
       <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="error" sx={{ borderRadius: 2, mb: 2 }}>
-          {error}
-        </Alert>
-        <Button
-          variant="contained"
-          onClick={() => navigate('/user/login', { replace: true })}
-          sx={{ bgcolor: '#ff6b6b', '&:hover': { bgcolor: '#ff5252' } }}
-        >
+        <Alert severity="error" sx={{ borderRadius: 2, mb: 2 }}>{error}</Alert>
+        <Button variant="contained" onClick={() => navigate('/user/login', { replace: true })}>
           Go to Login
         </Button>
       </Container>
@@ -440,7 +406,7 @@ const StudentDashboard = () => {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar Drawer - Increased width */}
+      {/* Sidebar Drawer */}
       <Drawer
         variant={isMobile ? 'temporary' : 'permanent'}
         open={isMobile ? mobileOpen : true}
@@ -449,7 +415,7 @@ const StudentDashboard = () => {
           width: 280,
           flexShrink: 0,
           [`& .MuiDrawer-paper`]: {
-            width: 240,
+            width: 280,
             boxSizing: 'border-box',
             bgcolor: '#ffffff',
             position: isMobile ? 'fixed' : 'relative',
@@ -490,8 +456,8 @@ const StudentDashboard = () => {
           </Button>
         </Box>
 
-        {/* Welcome Section */}
-        <div ref={dashboardRef}>
+        {/* ==================== DASHBOARD SECTION ==================== */}
+        <div ref={dashboardRef} id="dashboard">
           <Paper
             sx={{
               p: 4,
@@ -509,10 +475,8 @@ const StudentDashboard = () => {
           </Paper>
         </div>
 
-        {/* Stats Cards - Rest of your existing code remains the same */}
+        {/* Stats Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          
-
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
               <CardContent>
@@ -566,16 +530,17 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
           </Grid>
+
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
               <CardContent>
                 <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Box>
                     <Typography color="textSecondary" gutterBottom variant="caption">
-                      Payment Due
+                      Overall Progress
                     </Typography>
                     <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#ff6b6b' }}>
-                      {userData?.dueAmount || 0}
+                      {courseProgress.completed}%
                     </Typography>
                   </Box>
                   <SchoolIcon sx={{ fontSize: 40, color: '#ff6b6b', opacity: 0.7 }} />
@@ -588,14 +553,12 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
           </Grid>
-         
         </Grid>
 
-        {/* Rest of your existing Grid sections remain exactly the same */}
+        {/* ==================== MY PROFILE SECTION ==================== */}
         <Grid container spacing={3}>
-          {/* Student Information Section */}
           <Grid item xs={12} md={6}>
-            <div ref={personalInfoRef}>
+            <div ref={personalInfoRef} id="profile">
               <Card sx={{ borderRadius: 3, boxShadow: 3, height: '100%', scrollMarginTop: '80px' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
@@ -692,9 +655,9 @@ const StudentDashboard = () => {
             </div>
           </Grid>
 
-          {/* Course & Package Information */}
+          {/* ==================== MY COURSES SECTION ==================== */}
           <Grid item xs={12} md={6}>
-            <div ref={courseInfoRef}>
+            <div ref={courseInfoRef} id="courses">
               <Card sx={{ borderRadius: 3, boxShadow: 3, height: '100%', scrollMarginTop: '80px' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
@@ -772,15 +735,24 @@ const StudentDashboard = () => {
                         />
                       </Box>
                     </Grid>
+
+                    <Grid item xs={12}>
+                      <Box>
+                        <Typography variant="caption" color="textSecondary">Payment Due</Typography>
+                        <Typography variant="body1" fontWeight="bold" color="#f44336">
+                          ₹{userData?.dueAmount || 0}
+                        </Typography>
+                      </Box>
+                    </Grid>
                   </Grid>
                 </CardContent>
               </Card>
             </div>
           </Grid>
 
-          {/* Course Progress Section */}
+          {/* ==================== COURSE PROGRESS SECTION ==================== */}
           <Grid item xs={12}>
-            <div ref={courseProgressRef}>
+            <div ref={courseProgressRef} id="progress">
               <Card sx={{ borderRadius: 3, boxShadow: 3, scrollMarginTop: '80px' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
@@ -844,28 +816,37 @@ const StudentDashboard = () => {
             </div>
           </Grid>
 
-          {/* Recent Activity */}
+          {/* ==================== RECENT ACTIVITY SECTION ==================== */}
           <Grid item xs={12}>
-            <div ref={recentActivityRef}>
+            <div ref={recentActivityRef} id="activity">
               <Card sx={{ borderRadius: 3, boxShadow: 3, scrollMarginTop: '80px' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold', color: '#ff6b6b', mb: 2 }}>
+                    <HistoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
                     Recent Activity
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {dashboardStats?.recentActivities?.map((activity, index) => (
-                      <Box key={index} display="flex" justifyContent="space-between" alignItems="center" p={1} sx={{ '&:hover': { bgcolor: '#f5f5f5', borderRadius: 1 } }}>
-                        <Box display="flex" alignItems="center" gap={2}>
-                          {activity.type === 'module' && <SchoolIcon sx={{ color: '#ff6b6b' }} />}
-                          {activity.type === 'assignment' && <AssignmentIcon sx={{ color: '#ff9800' }} />}
-                          {activity.type === 'security' && <CheckCircleIcon sx={{ color: '#4caf50' }} />}
-                          <Typography variant="body2">{activity.activity}</Typography>
+                    {dashboardStats?.recentActivities?.length > 0 ? (
+                      dashboardStats.recentActivities.map((activity, index) => (
+                        <Box key={index} display="flex" justifyContent="space-between" alignItems="center" p={1} sx={{ '&:hover': { bgcolor: '#f5f5f5', borderRadius: 1 } }}>
+                          <Box display="flex" alignItems="center" gap={2}>
+                            {activity.type === 'module' && <SchoolIcon sx={{ color: '#ff6b6b' }} />}
+                            {activity.type === 'assignment' && <AssignmentIcon sx={{ color: '#ff9800' }} />}
+                            {activity.type === 'security' && <CheckCircleIcon sx={{ color: '#4caf50' }} />}
+                            <Typography variant="body2">{activity.activity}</Typography>
+                          </Box>
+                          <Typography variant="caption" color="textSecondary">{activity.date}</Typography>
                         </Box>
-                        <Typography variant="caption" color="textSecondary">{activity.date}</Typography>
+                      ))
+                    ) : (
+                      <Box textAlign="center" py={4}>
+                        <Typography variant="body2" color="textSecondary">
+                          No recent activities to display
+                        </Typography>
                       </Box>
-                    ))}
+                    )}
                   </Box>
                 </CardContent>
               </Card>
