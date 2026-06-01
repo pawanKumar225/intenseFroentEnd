@@ -22,9 +22,12 @@ import {
 import {
   Dashboard as DashboardIcon,
   LockReset as LockResetIcon,
+   EventNote as AttendanceIcon,
   Logout as LogoutIcon,
   ChevronLeft as ChevronLeftIcon,
-  BusinessCenter as BusinessCenterIcon
+  People as PeopleIcon,
+  Assignment as AssignmentIcon,
+  Lock as LockIcon,
 } from '@mui/icons-material';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import { getLoggedInUser } from '../../utils/auth';
@@ -91,9 +94,37 @@ const HRLayout = () => {
   const hasApprovalsAccess = ['super_admin', 'hr_manager', 'admin'].includes(userRole);
 
   // Menu items for HR
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/hr/dashboard' },
-    { text: 'HR Module', icon: <BusinessCenterIcon />, path: '/hr/module' },
+const menuItems = [
+    { 
+      text: 'Dashboard', 
+      icon: <DashboardIcon />, 
+      path: '/hr/dashboard',
+      roles: ['hr_manager', 'super_admin', 'admin']
+    },
+    { 
+      text: 'HR Module', 
+      icon: <PeopleIcon />, 
+      path: '/hr/module',
+      roles: ['hr_manager', 'super_admin', 'admin']
+    },
+    { 
+      text: 'Approvals', 
+      icon: <AssignmentIcon />, 
+      path: '/hr/approvals',
+      roles: ['hr_manager', 'super_admin', 'admin']
+    },
+    { 
+      text: 'Attendance', 
+      icon: <AttendanceIcon />, 
+      path: '/hr/attendance',
+      roles: ['hr_manager', 'super_admin', 'admin']
+    },
+    { 
+      text: 'Change Password', 
+      icon: <LockIcon />, 
+      path: '/hr/change-password',
+      roles: ['hr_manager', 'super_admin', 'admin']
+    }
   ];
   
   // Add Approvals item if user has access (renders within HR layout)

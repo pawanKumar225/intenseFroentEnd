@@ -15,7 +15,6 @@ const getAuthHeader = () => {
 const attendanceService = {
   // Employee APIs
   checkIn: async (locationData = null) => {
-    console.log(".........................",locationData)
     try {
       const response = await axios.post(
         `${API_URL}/attendance/checkin`,

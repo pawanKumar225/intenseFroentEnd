@@ -53,7 +53,11 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
-  Badge
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Slide
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
@@ -66,7 +70,16 @@ import InfoIcon from "@mui/icons-material/Info";
 import BuildIcon from "@mui/icons-material/Build";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
 import SchoolIcon from "@mui/icons-material/School";
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner"; // Add this import
 import "bootstrap/dist/css/bootstrap.min.css";
+
+// Import QRScanner component (create this if not exists)
+import MarkAttendance from "../Attendance/MarkAttendance";
+import QRScanner from "../Attendance/QRScanner";
+
+const Transition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -77,6 +90,7 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState("");
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false); // Add state for dialog
 
   useEffect(() => {
     checkAuthStatus();
@@ -117,6 +131,15 @@ export default function Navbar() {
 
   const handleNavigation = (path) => {
     navigate(path);
+    if (mobileOpen) {
+      setMobileOpen(false);
+    }
+    handleMenuClose();
+  };
+
+  // Handle Attendance Click
+  const handleAttendanceClick = () => {
+    setAttendanceDialogOpen(true);
     if (mobileOpen) {
       setMobileOpen(false);
     }
@@ -210,6 +233,25 @@ export default function Navbar() {
         ))}
 
         <Divider sx={{ my: 1 }} />
+
+        {/* Attendance Link - Only show for logged in users */}
+        {isLoggedIn && (
+          <ListItem 
+            onClick={handleAttendanceClick}
+            sx={{ 
+              '&:hover': { bgcolor: '#e3f2fd' },
+              cursor: 'pointer',
+              backgroundColor: attendanceDialogOpen ? '#e3f2fd' : 'transparent'
+            }}
+          >
+            <Box sx={{ mr: 2, color: '#84d816' }}><QrCodeScannerIcon /></Box>
+            <ListItemText 
+              primary="Attendance" 
+              secondary="Mark your attendance with QR code"
+              secondaryTypographyProps={{ fontSize: '0.75rem' }}
+            />
+          </ListItem>
+        )}
 
         {/* Admin Section */}
         <ListItem 
@@ -342,6 +384,28 @@ export default function Navbar() {
                   </Button>
                 ))}
 
+                {/* Attendance Button - Only show for logged in users */}
+                {isLoggedIn && (
+                  <Button
+                    onClick={handleAttendanceClick}
+                    color="inherit"
+                    sx={{
+                      color: '#fff',
+                      fontWeight: 500,
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.3)',
+                        transform: 'translateY(-2px)'
+                      },
+                      mx: 0.5,
+                      px: 2
+                    }}
+                  >
+                    <QrCodeScannerIcon sx={{ mr: 0.5, fontSize: 20 }} />
+                    Attendance
+                  </Button>
+                )}
+
                 {/* Admin Button */}
                 <Button
                   component={Link}
@@ -419,6 +483,10 @@ export default function Navbar() {
                         <DashboardIcon sx={{ mr: 1, fontSize: 20 }} />
                         Dashboard
                       </MenuItem>
+                      <MenuItem onClick={handleAttendanceClick}>
+                        <QrCodeScannerIcon sx={{ mr: 1, fontSize: 20 }} />
+                        Mark Attendance
+                      </MenuItem>
                       <MenuItem onClick={() => handleNavigation('/change-password')}>
                         <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
                         Change Password
@@ -469,6 +537,24 @@ export default function Navbar() {
       >
         {drawer}
       </Drawer>
+
+      {/* Attendance QR Scanner Dialog */}
+      <Dialog
+  open={attendanceDialogOpen}
+  onClose={() => setAttendanceDialogOpen(false)}
+  maxWidth="md"
+  fullWidth
+  TransitionComponent={Transition}
+  PaperProps={{
+    sx: {
+      borderRadius: 3,
+      overflow: 'hidden',
+      maxHeight: '90vh'
+    }
+  }}
+>
+  <MarkAttendance onClose={() => setAttendanceDialogOpen(false)} />
+</Dialog>
     </>
   );
 }

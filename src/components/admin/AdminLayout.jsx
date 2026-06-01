@@ -7,7 +7,7 @@ import {
   useMediaQuery, ThemeProvider, createTheme, CssBaseline
 } from '@mui/material';
 import {
-  Menu as MenuIcon, People as PeopleIcon, Payment as PaymentIcon,
+  Menu as MenuIcon, People as PeopleIcon, Payment as PaymentIcon, EventNote as AttendanceIcon,
   BusinessCenter as BusinessCenterIcon, AdminPanelSettings as AdminPanelSettingsIcon,
   Logout as LogoutIcon, ChevronLeft as ChevronLeftIcon, 
   Password as PasswordIcon, Dashboard as DashboardIcon
@@ -48,6 +48,12 @@ const AdminLayout = () => {
   const getMenuItems = () => {
     const items = [
       { text: 'Dashboard', icon: <DashboardIcon />, path: '/admin/dashboard' },
+         { 
+      text: 'Attendance', 
+      icon: <AttendanceIcon />, 
+      path: '/admin/attendance',
+      roles: ['employee', 'hr_manager', 'super_admin', 'admin']
+    },
       { text: 'Student List', icon: <PeopleIcon />, path: '/admin/students' },
       { text: 'Payment History', icon: <PaymentIcon />, path: '/admin/payments' },
       { text: 'HR Module', icon: <BusinessCenterIcon />, path: '/admin/hr' },

@@ -237,3 +237,75 @@ button[type="submit"]:hover {
   transform: scale(1.02);
 }
 
+
+
+
+/* Add to src/App.css or index.css */
+@keyframes scanAnimation {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0;
+  }
+}
+
+.attendance-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.attendance-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(132, 216, 22, 0.2);
+}
+
+.scanning-frame {
+  animation: scanAnimation 2s infinite;
+}
+
+
+
+/* QR Scanner Styles */
+#qr-reader {
+  width: 100%;
+  border: none !important;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+#qr-reader__scan_region {
+  background: #000;
+  min-height: 400px;
+}
+
+#qr-reader__dashboard_section_csr {
+  display: none !important;
+}
+
+#qr-reader video {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: cover;
+}
+
+#qr-reader__dashboard {
+  padding: 10px !important;
+}
+
+/* Animation for success */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.MuiDialog-paper {
+  animation: fadeInUp 0.3s ease-out;
+}
