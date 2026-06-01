@@ -12,7 +12,7 @@ import PaymentHistory from '../admin/PaymentHistory';
 import CreateAdmin from '../admin/CreateAdmin';
 import HRModule from "../hrmodule/HRModule";
 import FirstTimePasswordChange from '../admin/AdminFirstTimePasswordChange';
-
+import AttendanceModule from "../pages/attendance/AttendanceModule";
 export default function AdminRoutes() {
   return (
     <Routes>
@@ -34,6 +34,7 @@ export default function AdminRoutes() {
         <Route path="students" element={<StudentList />} />
         <Route path="payments" element={<PaymentHistory />} />
         <Route path="hr" element={<HRModule />} />
+        <Route path="attendance" element={<AttendanceModule />} />
         <Route path="createuser" element={<CreateAdmin />} />
         <Route path="change-password" element={<ChangePassword />} />
         <Route path="profile" element={<AdminProfile />} />

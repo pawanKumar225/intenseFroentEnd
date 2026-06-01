@@ -107,24 +107,14 @@ const menuItems = [
       path: '/hr/module',
       roles: ['hr_manager', 'super_admin', 'admin']
     },
-    { 
-      text: 'Approvals', 
-      icon: <AssignmentIcon />, 
-      path: '/hr/approvals',
-      roles: ['hr_manager', 'super_admin', 'admin']
-    },
+    
     { 
       text: 'Attendance', 
       icon: <AttendanceIcon />, 
       path: '/hr/attendance',
       roles: ['hr_manager', 'super_admin', 'admin']
     },
-    { 
-      text: 'Change Password', 
-      icon: <LockIcon />, 
-      path: '/hr/change-password',
-      roles: ['hr_manager', 'super_admin', 'admin']
-    }
+    
   ];
   
   // Add Approvals item if user has access (renders within HR layout)
