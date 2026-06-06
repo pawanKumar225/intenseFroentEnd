@@ -38,6 +38,7 @@ class AdminAPI {
                 localStorage.setItem('token', data.data.token);
                 localStorage.setItem('adminData', JSON.stringify(data.data.admin));
                 localStorage.setItem('userData', JSON.stringify(data.data.admin));
+                localStorage.setItem('requiresPasswordChange', data.data.requiresPasswordChange);
                 this.token = data.data.token;
             }
             return data;
@@ -73,6 +74,10 @@ class AdminAPI {
     async firstTimePasswordChange(newPassword, confirmPassword) {
         try {
             const token = this.getToken();
+            if (!token) {
+                return { success: false, message: 'No authentication token found' };
+            }
+
             const response = await fetch(`${API_BASE_URL}/admin/first-time-password`, {
                 method: 'POST',
                 headers: {
@@ -83,6 +88,18 @@ class AdminAPI {
             });
             
             const data = await response.json();
+            
+            // If password change successful, update stored token and flag
+            if (data.success && data.token) {
+                localStorage.setItem('adminToken', data.token);
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('requiresPasswordChange', 'false');
+                if (data.data) {
+                    localStorage.setItem('adminData', JSON.stringify(data.data));
+                    localStorage.setItem('userData', JSON.stringify(data.data));
+                }
+            }
+            
             return data;
         } catch (error) {
             console.error('First time password change error:', error);
@@ -103,6 +120,7 @@ class AdminAPI {
         localStorage.removeItem('userEmail');
         localStorage.removeItem('isFirstTimeLogin');
         this.token = null;
+        localStorage.clear();
     }
 
     async createAdmin(adminData) {

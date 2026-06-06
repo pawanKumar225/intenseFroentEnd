@@ -11,7 +11,7 @@ import StudentList from '../admin/StudentList';
 import PaymentHistory from '../admin/PaymentHistory';
 import CreateAdmin from '../admin/CreateAdmin';
 import HRModule from "../hrmodule/HRModule";
-import FirstTimePasswordChange from '../admin/AdminFirstTimePasswordChange';
+import FirstTimePasswordChange from '../admin/FirstTimePasswordChange';
 import AttendanceModule from "../pages/attendance/AttendanceModule";
 export default function AdminRoutes() {
   return (
