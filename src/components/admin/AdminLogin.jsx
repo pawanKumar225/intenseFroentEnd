@@ -111,7 +111,9 @@ React.useEffect(() => {
         localStorage.setItem('userRole', userRole);
         localStorage.setItem('userName', userName);
         localStorage.setItem('userData', JSON.stringify(response.data?.admin || response.user || {}));
-        
+
+        const isPasswordChange = response.data?.admin?.isPasswordChange;
+        console.log("isPassword..........", isPasswordChange)
         // Check if password needs to be changed
         if (response.data?.requiresPasswordChange === true) {
           // Store a flag that this is first time login

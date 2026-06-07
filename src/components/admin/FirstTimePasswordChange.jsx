@@ -1,55 +1,61 @@
-// src/components/student/FirstTimePasswordChange.jsx
-import React, { useState, useEffect } from 'react';
+// src/admin/FirstTimePasswordChange.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
+  Typography,
   Container,
   Paper,
-  TextField,
-  Button,
-  Typography,
   Box,
-  Alert,
-  CircularProgress,
-  InputAdornment,
+  Button,
   IconButton,
+  TextField,
+  InputAdornment,
+  CircularProgress,
+  Snackbar,
+  Alert,
   Stepper,
   Step,
   StepLabel,
-  Fade,
-  Card,
-  CardContent
+  LinearProgress,
 } from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  VpnKey,
-  Lock,
-  CheckCircle,
-  Security
-} from '@mui/icons-material';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
 
 const API_BASE_URL = 'http://localhost:5000';
 
-const StudentFirstTimePasswordChange = () => {
+export default function FirstTimePasswordChange() {
   const navigate = useNavigate();
+  const [activeStep, setActiveStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     newPassword: '',
     confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [activeStep, setActiveStep] = useState(0);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    message: '',
+    checks: {
+      length: false,
+      uppercase: false,
+      lowercase: false,
+      number: false,
+      special: false
+    }
+  });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
-  // Get student info from localStorage
-  const admin = JSON.parse(localStorage.getItem('adminData') || '{}');
-  const AdminName = admin.name || 'Student';
-console.log("Admin...............login.............first...........")
-  // Check if user is logged in
+  // Check if user is authenticated and needs password change
   useEffect(() => {
     const token = localStorage.getItem('token');
     const isFirstTime = localStorage.getItem('isFirstTimeLogin');
@@ -71,80 +77,68 @@ console.log("Admin...............login.............first...........")
     }
   }, [navigate]);
 
-  const validatePassword = (password) => {
-    const errors = [];
-    if (password.length < 6) errors.push('At least 6 characters');
-    if (!/(?=.*[a-z])/.test(password)) errors.push('One lowercase letter');
-    if (!/(?=.*[A-Z])/.test(password)) errors.push('One uppercase letter');
-    if (!/(?=.*\d)/.test(password)) errors.push('One number');
-    return errors;
+  // Check password strength
+  const checkPasswordStrength = (password) => {
+    const checks = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[@$!%*?&#]/.test(password)
+    };
+    
+    const score = Object.values(checks).filter(Boolean).length;
+    
+    let message = '';
+    if (score <= 2) message = 'Weak';
+    else if (score <= 4) message = 'Medium';
+    else message = 'Strong';
+    
+    return { score, message, checks };
   };
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    setError('');
+    setErrors(prev => ({ ...prev, [name]: '' }));
     
-    // Clear specific error
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-    
-    // Real-time validation for new password
     if (name === 'newPassword') {
-      const validationErrors = validatePassword(value);
-      if (validationErrors.length > 0) {
-        setErrors(prev => ({ ...prev, passwordStrength: validationErrors }));
-      } else {
-        setErrors(prev => ({ ...prev, passwordStrength: [] }));
-      }
-    }
-    
-    // Real-time match validation
-    if (name === 'confirmPassword' || (name === 'newPassword' && formData.confirmPassword)) {
-      const confirmValue = name === 'confirmPassword' ? value : formData.confirmPassword;
-      const newPassValue = name === 'newPassword' ? value : formData.newPassword;
-      
-      if (confirmValue && newPassValue !== confirmValue) {
-        setErrors(prev => ({ ...prev, confirmPassword: 'Passwords do not match' }));
-      } else {
-        setErrors(prev => ({ ...prev, confirmPassword: '' }));
-      }
+      setPasswordStrength(checkPasswordStrength(value));
     }
   };
 
-  const validate = () => {
-    let tempErrors = {};
+  const validateForm = () => {
+    const newErrors = {};
+    const { newPassword, confirmPassword } = formData;
     
-    if (!formData.newPassword) {
-      tempErrors.newPassword = 'New password is required';
-    } else {
-      const validationErrors = validatePassword(formData.newPassword);
-      if (validationErrors.length > 0) {
-        tempErrors.newPassword = `Password must contain: ${validationErrors.join(', ')}`;
-      }
+    if (!newPassword) {
+      newErrors.newPassword = 'New password is required';
+    } else if (newPassword.length < 6) {
+      newErrors.newPassword = 'Password must be at least 6 characters';
+    } else if (passwordStrength.score < 4) {
+      newErrors.newPassword = 'Please meet all password requirements below';
     }
     
-    if (!formData.confirmPassword) {
-      tempErrors.confirmPassword = 'Please confirm your password';
-    } else if (formData.newPassword !== formData.confirmPassword) {
-      tempErrors.confirmPassword = 'Passwords do not match';
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
     
-    setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validate()) return;
+    if (!validateForm()) return;
     
     setLoading(true);
-    setError('');
     
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token');
+      
       const response = await axios.post(
         `${API_BASE_URL}/admin/first-time-password`,
         {
@@ -159,228 +153,257 @@ console.log("Admin...............login.............first...........")
         }
       );
       
+      console.log("Password change response:", response.data);
+      
       if (response.data.success) {
-        setSuccess(true);
-        setActiveStep(1);
+        // Clear first time login flag
+        localStorage.removeItem('isFirstTimeLogin');
         
-        // Clear stored credentials
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminToken');
+        // Update token if provided
+        if (response.data.token) {
+          localStorage.setItem('token', response.data.token);
+        }
         
-        // Redirect to login after 3 seconds
+        // Update user data if provided
+        if (response.data.data) {
+          localStorage.setItem('userData', JSON.stringify(response.data.data));
+          localStorage.setItem('userName', response.data.data.name);
+          localStorage.setItem('userRole', response.data.data.role);
+        }
+        
+        setSnackbar({
+          open: true,
+          message: response.data.message || '✅ Password changed successfully! Redirecting to dashboard...',
+          severity: 'success'
+        });
+        
+        // Redirect after 2 seconds
+        setTimeout(() => {
+          const role = localStorage.getItem('userRole');
+          if (role === 'hr_manager') {
+            navigate('/hr/dashboard');
+          } else if (role === 'employee') {
+            navigate('/employee/dashboard');
+          } else {
+            navigate('/admin/dashboard');
+          }
+        }, 2000);
+      } else {
+        setSnackbar({
+          open: true,
+          message: response.data.message || 'Failed to change password',
+          severity: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          'Error changing password. Please try again.';
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: 'error'
+      });
+      
+      // Handle expired token
+      if (error.response?.status === 401) {
+        localStorage.clear();
         setTimeout(() => {
           navigate('/admin/login');
-        }, 3000);
+        }, 2000);
       }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to change password');
     } finally {
       setLoading(false);
     }
   };
 
-  const steps = ['Set New Password', 'Confirmation'];
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
+  };
 
   return (
-    <Container maxWidth="sm" sx={{ 
+    <div style={{ 
       minHeight: '100vh', 
-      display: 'flex', 
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      display: 'flex',
       alignItems: 'center',
-      py: 4
+      justifyContent: 'center',
+      padding: '20px'
     }}>
-      <Fade in={true} timeout={800}>
-        <Paper elevation={10} sx={{ 
-          borderRadius: 4, 
-          overflow: 'hidden',
-          width: '100%'
-        }}>
-          {/* Header */}
-          <Box sx={{ 
-            background: 'linear-gradient(135deg, #ff6b6b, #ff8e8e)',
-            color: 'white',
-            p: 4,
-            textAlign: 'center'
-          }}>
-            <Security sx={{ fontSize: 48, mb: 2 }} />
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+      <Container maxWidth="md">
+        <Paper elevation={6} sx={{ p: 4, borderRadius: 4 }}>
+          <Box sx={{ textAlign: 'center', mb: 4 }}>
+            <IconButton 
+              sx={{ 
+                bgcolor: "#e91e63", 
+                color: "white", 
+                mb: 2, 
+                "&:hover": { bgcolor: "#c2185b" } 
+              }}
+            >
+              <LockResetIcon fontSize="large" />
+            </IconButton>
+            <Typography variant="h4" fontWeight="bold" color="primary">
               First Time Login
             </Typography>
-            <Typography variant="body2" sx={{ opacity: 0.9 }}>
-              Welcome, {AdminName}! Please set your new password
+            <Typography variant="body2" color="textSecondary">
+              Please change your default password to continue
             </Typography>
           </Box>
 
-          <Box sx={{ p: 4 }}>
-            <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-              {steps.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
+          <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
+            <Step completed={activeStep > 0}>
+              <StepLabel>Create New Password</StepLabel>
+            </Step>
+          </Stepper>
 
-            {activeStep === 0 ? (
-              <form onSubmit={handleSubmit}>
-                {error && (
-                  <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-                    {error}
-                  </Alert>
-                )}
-
-                {/* New Password Field */}
-                <TextField
-                  fullWidth
-                  name="newPassword"
-                  label="New Password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  error={!!errors.newPassword}
-                  helperText={errors.newPassword}
-                  margin="normal"
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <VpnKey color="primary" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
-
-                {/* Password Strength Indicator */}
-                {formData.newPassword && (
-                  <Box sx={{ mt: 1, mb: 2 }}>
-                    <Typography variant="caption" color="textSecondary">
-                      Password requirements:
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 0.5 }}>
-                      {[
-                        { text: '6+ characters', check: formData.newPassword.length >= 6 },
-                        { text: 'Uppercase', check: /[A-Z]/.test(formData.newPassword) },
-                        { text: 'Lowercase', check: /[a-z]/.test(formData.newPassword) },
-                        { text: 'Number', check: /\d/.test(formData.newPassword) }
-                      ].map((req, idx) => (
-                        <Typography
-                          key={idx}
-                          variant="caption"
-                          sx={{
-                            color: req.check ? '#4caf50' : '#999',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                            mr: 1
-                          }}
-                        >
-                          {req.check ? '✓' : '○'} {req.text}
-                        </Typography>
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-
-                {/* Confirm Password Field */}
-                <TextField
-                  fullWidth
-                  name="confirmPassword"
-                  label="Confirm Password"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  error={!!errors.confirmPassword}
-                  helperText={errors.confirmPassword}
-                  margin="normal"
-                  required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Lock color="primary" />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} edge="end">
-                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    )
-                  }}
-                />
-
-                {/* Password Match Indicator */}
-                {formData.confirmPassword && formData.newPassword && (
-                  <Box sx={{ mt: 1, mb: 2 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: formData.newPassword === formData.confirmPassword ? '#4caf50' : '#f44336',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 0.5
-                      }}
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="New Password"
+              name="newPassword"
+              type={showPassword ? "text" : "password"}
+              variant="outlined"
+              margin="normal"
+              value={formData.newPassword}
+              onChange={handleInputChange}
+              error={!!errors.newPassword}
+              helperText={errors.newPassword}
+              disabled={loading}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton 
+                      onClick={() => setShowPassword(!showPassword)} 
+                      edge="end"
                     >
-                      {formData.newPassword === formData.confirmPassword ? (
-                        <><CheckCircle fontSize="small" /> Passwords match</>
-                      ) : (
-                        <>⚠️ Passwords do not match</>
-                      )}
-                    </Typography>
-                  </Box>
-                )}
+                      {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
 
-                <Alert severity="info" sx={{ mt: 2, mb: 3, borderRadius: 2 }}>
-                  <Typography variant="body2">
-                    This is your first time logging in. Please set a new password.
-                    After changing your password, you'll receive a confirmation email.
+            {/* Password Strength Indicator */}
+            {formData.newPassword && (
+              <Box sx={{ mt: 1, mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="caption" fontWeight="bold">
+                    Password Strength:
                   </Typography>
-                </Alert>
-
-                <Button
-                  type="submit"
-                  variant="contained"
-                  fullWidth
-                  size="large"
-                  disabled={loading}
-                  sx={{
-                    py: 1.5,
-                    borderRadius: 2,
-                    fontWeight: 'bold',
-                    background: 'linear-gradient(45deg, #ff6b6b, #ff8e8e)',
-                    '&:hover': {
-                      background: 'linear-gradient(45deg, #ff5252, #ff6b6b)'
+                  <Typography 
+                    variant="caption" 
+                    sx={{ 
+                      color: passwordStrength.score <= 2 ? '#f44336' : 
+                             passwordStrength.score <= 4 ? '#ff9800' : '#4caf50',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {passwordStrength.message}
+                  </Typography>
+                </Box>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={(passwordStrength.score / 5) * 100}
+                  sx={{ 
+                    height: 8, 
+                    borderRadius: 4,
+                    bgcolor: '#e0e0e0',
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: passwordStrength.score <= 2 ? '#f44336' : 
+                               passwordStrength.score <= 4 ? '#ff9800' : '#4caf50'
                     }
                   }}
-                >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : 'Change Password'}
-                </Button>
-              </form>
-            ) : (
-              <Fade in={true}>
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <CheckCircle sx={{ fontSize: 80, color: '#4caf50', mb: 2 }} />
-                  <Typography variant="h6" gutterBottom>
-                    Password Changed Successfully!
-                  </Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                    A confirmation email has been sent to your registered email address.
-                    Redirecting you to login page...
-                  </Typography>
-                  <CircularProgress size={32} />
+                />
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 1 }}>
+                  {Object.entries(passwordStrength.checks).map(([key, isValid]) => (
+                    <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {isValid ? 
+                        <CheckCircleIcon sx={{ fontSize: 14, color: '#4caf50' }} /> : 
+                        <ErrorIcon sx={{ fontSize: 14, color: '#f44336' }} />
+                      }
+                      <Typography variant="caption" color={isValid ? 'success.main' : 'error.main'}>
+                        {key === 'length' ? 'Min 8 chars' :
+                         key === 'uppercase' ? 'Uppercase' :
+                         key === 'lowercase' ? 'Lowercase' :
+                         key === 'number' ? 'Number' : 'Special char (@$!%*?&#)'}
+                      </Typography>
+                    </Box>
+                  ))}
                 </Box>
-              </Fade>
+              </Box>
             )}
+
+            <TextField
+              fullWidth
+              label="Confirm New Password"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              variant="outlined"
+              margin="normal"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              error={!!errors.confirmPassword}
+              helperText={errors.confirmPassword}
+              disabled={loading}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton 
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                      edge="end"
+                    >
+                      {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Button
+              fullWidth
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={loading}
+              sx={{ 
+                mt: 4, 
+                py: 1.5, 
+                borderRadius: 2,
+                background: "linear-gradient(45deg, #e91e63, #ff6f91)",
+                fontWeight: "bold",
+                "&:hover": { background: "linear-gradient(45deg, #c2185b, #e91e63)" }
+              }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Change Password & Continue"}
+            </Button>
+          </form>
+
+          <Box sx={{ mt: 3, p: 2, bgcolor: '#fff3e0', borderRadius: 2 }}>
+            <Typography variant="caption" color="textSecondary" display="block" align="center">
+              <strong>⚠️ Security Tips:</strong>
+              <br />
+              • Use a strong password that you haven't used before
+              <br />
+              • Never share your password with anyone
+              <br />
+              • Forgot password? Contact system administrator
+            </Typography>
           </Box>
         </Paper>
-      </Fade>
-    </Container>
-  );
-};
+      </Container>
 
-export default StudentFirstTimePasswordChange;
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </div>
+  );
+}

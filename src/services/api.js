@@ -61,6 +61,7 @@ class AdminAPI {
             });
             
             const data = await response.json();
+            console.log("update password............", data)
             return data;
         } catch (error) {
             console.error('Change password error:', error);
